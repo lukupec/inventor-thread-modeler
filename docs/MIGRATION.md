@@ -41,13 +41,13 @@ Sources (Autodesk Developer Blog):
   file and instantiates the class whose `[Guid]` matches `<ClassId>`; no COM registration or manifest is used.
 - `InstallUtils` (RegAsm, `RegistrationServices`, `System.Configuration.Install`) and
   `AdnAddInRegistration` (HKCR CLSID registration) removed – unused, and not applicable to .NET 10 Inventor.
-- `coolOrange.ThreadModeler.Inventor.addin` converted from UTF-16 to UTF-8;
+- `coolOrange.ThreadModeler.Inventor.addin`:
   `SupportedSoftwareVersionLessThan 24..` replaced by `SupportedSoftwareVersionGreaterThan 29..`
   (Inventor 2026 = 30, 2027 = 31). ClassId/ClientId unchanged.
-- `UseInventorAssemblyContext = 1`: Inventor 2027 loads the add-in into Inventor's shared
-  assembly load context, so the add-in and Inventor use the same `Autodesk.Inventor.Interop`.
-  (30.0.0 used `0`, an isolated context. That context would load its own copy of the interop, and
-  Inventor could not cast the add-in to its `ApplicationAddInServer` type.) Earlier versions ignore the element.
+- No `UseInventorAssemblyContext` element. The add-in loads into Inventor's shared assembly load context (the
+  default), so the add-in and Inventor use the same `Autodesk.Inventor.Interop`. 30.0.0 used `0`, an isolated
+  context, which would load its own copy of the interop. 30.0.1 used `1`, which is the default. The manifest
+  is back in the original UTF-16 format without comments.
 
 ### Packaging, installer and updates
 - The add-in is an Autodesk **ApplicationPlugins bundle** (`cODTthreadModeler.bundle`, the same folder
@@ -92,10 +92,15 @@ Sources (Autodesk Developer Blog):
   Previously Inventor swallowed them silently.
 
 ### Logging
-- `References\log4net.dll` (1.2.x, .NET 2.0) replaced by the `log4net` 3.5.0 NuGet package.
-- `XmlConfigurator.Configure` now targets the repository of the add-in assembly
-  (`LogManager.GetRepository(assembly)`), as required by log4net 2+/3.
-- Logger initialisation is wrapped in `try/catch` so a logging problem cannot prevent the add-in from loading.
+- **log4net removed** (30.0.2). It is replaced by `Addin\AddinLog.cs`, a small built-in logger that writes to
+  `%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log`.
+  - 30.0.0 and 30.0.1 used the `log4net` 3.5.0 package, loaded through a static field of the add-in class.
+  - If Inventor or another add-in (Vault, for example) had already loaded a different log4net version into the
+    shared load context, .NET threw `FileLoadException` while Inventor created the add-in, and the add-in stayed
+    *Unloaded* without any message.
+  - The add-in now has no third-party dependencies.
+- `Addin\LoadDiagnostics.cs` (a module initializer) logs how the assembly was loaded, and any assembly that
+  cannot be resolved. `Activate` runs its work in non-inlined methods, so type-load errors are caught and reported.
 
 ### Versioning
 - Single source: `<Version>` in `Directory.Build.props`. The assembly version attributes are generated

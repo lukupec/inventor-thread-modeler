@@ -36,8 +36,6 @@ dist/
     Contents/
       coolOrange.ThreadModeler.Inventor.addin
       ThreadModeler.dll, .deps.json, .runtimeconfig.json
-      ThreadModeler.dll.log4net
-      log4net.dll
       Thread Templates/BSW Template.ipt, ISO Template.ipt
   cODTthreadModeler.bundle.zip
 ```
@@ -86,7 +84,11 @@ dotnet build ThreadModeler\ThreadModeler.csproj -p:InventorInteropPath="C:\Progr
 3. Press F5. Breakpoints in `StandardAddInServer.Activate` are hit while Inventor starts.
 
 Close Inventor before rebuilding, because it locks `ThreadModeler.dll`.
-If loading fails, see `%TEMP%\ThreadModeler-load-error.txt`.
+If loading fails, see `%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log` and `%TEMP%\ThreadModeler-load-error.txt`.
+
+**Do not add third-party NuGet dependencies lightly.** Inventor loads every add-in and its own components into one
+process. If another component has already loaded a different version of the same library, .NET refuses to load
+yours, and the add-in fails silently while Inventor creates it. This is what broke 30.0.1 with log4net.
 
 To test the updater without waiting a day, delete `%LOCALAPPDATA%\coolOrange\ThreadModeler\update.json`
 or use **Check for Updates**.

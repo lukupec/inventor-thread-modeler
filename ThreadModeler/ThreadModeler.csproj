@@ -89,10 +89,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="log4net" Version="3.5.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="..\ProductInfo.cs" Link="Properties\ProductInfo.cs" />
   </ItemGroup>
 
@@ -107,7 +103,6 @@
   <ItemGroup>
     <Content Include="Thread Templates\*.ipt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="coolOrange.ThreadModeler.Inventor.addin" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ThreadModeler.dll.log4net" CopyToOutputDirectory="PreserveNewest" />
     <!-- Template: @VERSION@ is replaced and the result written to the bundle root (see target below). -->
     <None Include="PackageContents.xml" />
     <None Include="ReadMe.txt" />

@@ -45,7 +45,7 @@
     </StandardDirectory>
 
     <Feature Id="ThreadModeler" Title="ThreadModeler" AllowAbsent="no">
-      <!-- The complete bundle: PackageContents.xml + Contents\ (add-in, .addin, log4net, thread templates). -->
+      <!-- The complete bundle: PackageContents.xml + Contents\ (add-in, .addin, thread templates). -->
       <Files Directory="INSTALLFOLDER" Include="!(bindpath.Bundle)**" />
 
       <Component Id="DisableUpdateCheckPolicy" Directory="INSTALLFOLDER" Condition="DISABLEUPDATECHECK = 1" Bitness="always64">

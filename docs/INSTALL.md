@@ -91,14 +91,14 @@ Uninstall by deleting the folder. The automatic update check also works for manu
 
 ## Logs
 
-Errors are written with log4net to
+The add-in writes a short log per user to
 
 ```
-C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle\Contents\Log\threadModeler.log
+%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log
 ```
 
-They also go to the debugger output, which you can view with Sysinternals DebugView. The log level is set in
-`Contents\ThreadModeler.dll.log4net`: `ERROR` by default, `DEBUG` for more detail.
+It contains how it was loaded (runtime, load context, Inventor interop version), activation, update checks
+and errors. It is also written to the debugger output, which you can view with Sysinternals DebugView.
 
 If the add-in fails while loading, the error is shown in a message box and appended to
 `%TEMP%\ThreadModeler-load-error.txt`. That file includes the Inventor and .NET versions.
@@ -107,9 +107,8 @@ If the add-in fails while loading, the error is shown in a message box and appen
 
 | Symptom | Check |
 |---|---|
-| *Automatic / Unloaded* in the Add-In Manager, no message | Inventor 2026 below **Update 2026.4**: update Inventor. To see the runtime Inventor uses, run this while Inventor is open: `(Get-Process Inventor).Modules \| ? ModuleName -eq coreclr.dll \| select FileName`. The path must contain `Microsoft.NETCore.App\10.` |
-| Message "ThreadModeler failed to load" | Send `%TEMP%\ThreadModeler-load-error.txt` along with the issue |
+| *Automatic / Unloaded* in the Add-In Manager, no message | 1. Inventor 2026 below **Update 2026.4**: update Inventor. To see the runtime Inventor uses, run this while Inventor is open: `(Get-Process Inventor).Modules \| ? ModuleName -eq coreclr.dll \| select FileName`. The path must contain `Microsoft.NETCore.App\10.` 2. Check the end of `%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log`. If there is no entry from this Inventor session, Inventor never loaded `ThreadModeler.dll`. If there is a *loaded* line but no *Activated* line, the log shows why. |
+| Message "ThreadModeler failed to load" | Send `%TEMP%\ThreadModeler-load-error.txt` and `threadModeler.log` along with the issue |
 | Add-in not listed in *Tools → Add-Ins* | `C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle\PackageContents.xml` must exist |
 | Update check says it could not connect | The PC needs HTTPS access to `api.github.com`, `github.com` and `objects.githubusercontent.com` (proxy/firewall) |
-| No log file is written | Standard users may not be able to write to `ProgramData`. Use DebugView, or grant write access to `Contents\Log` |
 | *Thread Sketch Template* field is empty | `Contents\Thread Templates\*.ipt` must sit next to `ThreadModeler.dll`, or pick a template with **...** |

@@ -19,15 +19,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using ThreadModeler.Addin;
 using ThreadModeler.Utilities;
 
 namespace ThreadModeler.Update
 {
     internal sealed class UpdateChecker : IDisposable
     {
-        private static readonly log4net.ILog log =
-            log4net.LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         private const string PolicyKey = @"SOFTWARE\coolOrange\ThreadModeler";
         private const string PolicyValue = "DisableUpdateCheck";
         private const string Caption = "ThreadModeler update";
@@ -71,7 +69,7 @@ namespace ThreadModeler.Update
 
             if (IsDisabledByPolicy())
             {
-                log.Info("Automatic update check disabled by policy (" + PolicyKey + "\\" + PolicyValue + ").");
+                AddinLog.Info("Automatic update check disabled by policy (" + PolicyKey + "\\" + PolicyValue + ").");
                 return;
             }
 
@@ -158,7 +156,7 @@ namespace ThreadModeler.Update
             if (task.IsFaulted || task.IsCanceled)
             {
                 Exception ex = task.Exception != null ? task.Exception.GetBaseException() : null;
-                log.Warn("Update check failed.", ex);
+                AddinLog.Warn("Update check failed.", ex);
                 if (_manual)
                     Error("Could not check for updates.\n\n" + (ex != null ? ex.Message : "The request timed out."));
                 return;
@@ -258,7 +256,7 @@ namespace ThreadModeler.Update
             if (task.IsFaulted || task.IsCanceled)
             {
                 Exception ex = task.Exception != null ? task.Exception.GetBaseException() : null;
-                log.Error("Update download failed.", ex);
+                AddinLog.Error("Update download failed.", ex);
                 Error("The update could not be downloaded.\n\n" + (ex != null ? ex.Message : "The request timed out.") +
                       "\n\nYou can download it manually from:\n" + release.PageUrl);
                 return;
@@ -274,7 +272,7 @@ namespace ThreadModeler.Update
             }
             catch (Exception ex)
             {
-                log.Error("Could not schedule the update.", ex);
+                AddinLog.Error("Could not schedule the update.", ex);
                 Error("The update could not be scheduled.\n\n" + ex.Message +
                       "\n\nYou can install it manually: " + task.Result);
             }
@@ -334,7 +332,7 @@ namespace ThreadModeler.Update
             }
             catch (Exception ex)
             {
-                log.Warn("Could not read " + _stateFile, ex);
+                AddinLog.Warn("Could not read " + _stateFile, ex);
                 return new UpdateState();
             }
         }
@@ -348,7 +346,7 @@ namespace ThreadModeler.Update
             }
             catch (Exception ex)
             {
-                log.Warn("Could not write " + _stateFile, ex);
+                AddinLog.Warn("Could not write " + _stateFile, ex);
             }
         }
 

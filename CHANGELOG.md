@@ -1,5 +1,18 @@
 # Changelog
 
+## 30.0.2 – 2026-11-01
+
+- **Fix: add-in stayed "Automatic / Unloaded" in Inventor 2026.4.** The add-in depended on log4net 3.5. When
+  Inventor or another add-in (for example Vault) had already loaded a different log4net version, .NET refused
+  to load ours, and the add-in failed while Inventor created it, before any error handling could run.
+  log4net is replaced by a small built-in logger, so the add-in has no third-party dependencies.
+- The log moves to `%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log`, which is writable for every user.
+  It also records how the add-in was loaded (runtime, load context, Inventor interop) and any assembly that
+  could not be resolved.
+- Type-load failures inside `Activate` are now caught and reported too.
+- `.addin` manifest back to the original UTF-16 format without comments; `UseInventorAssemblyContext`
+  removed (its value 1 is Inventor's default).
+
 ## 30.0.1 – 2026-11-01
 
 - **Installer**: per-machine MSI (`ThreadModeler-<version>.msi`) from GitHub Releases. Double-click to install;
