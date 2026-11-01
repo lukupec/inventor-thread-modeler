@@ -1,0 +1,53 @@
+name: release
+
+# Publishing a release: bump <Version> in Directory.Build.props, commit, then
+#   git tag v30.0.2 && git push origin v30.0.2
+# The add-in's update check looks at the latest (non-prerelease) release and its .msi / .msi.sha256 assets.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Version from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          if ($tag -notmatch '^v(\d+\.\d+\.\d+)$') { throw "Tag '$tag' must look like v30.0.2" }
+          $version = $Matches[1]
+          $props = [xml](Get-Content Directory.Build.props)
+          $declared = ($props.Project.PropertyGroup.Version | Select-Object -First 1).'#text'
+          if ($declared -ne $version) {
+            Write-Warning "Directory.Build.props says $declared but the tag is $tag - building $version from the tag."
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build, test, package
+        shell: pwsh
+        run: ./build.ps1 -Configuration Release -Version ${{ steps.ver.outputs.version }}
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          gh release create '${{ github.ref_name }}' `
+            "dist/ThreadModeler-$v.msi" `
+            "dist/ThreadModeler-$v.msi.sha256" `
+            "dist/cODTthreadModeler.bundle.zip" `
+            --title "ThreadModeler $v" `
+            --generate-notes

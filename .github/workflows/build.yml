@@ -2,6 +2,8 @@ name: build
 
 on:
   push:
+    branches: ['**']
+    tags-ignore: ['v*']   # tags are handled by release.yml
   pull_request:
   workflow_dispatch:
 
@@ -15,12 +17,23 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Build bundle
+      - name: Build, test, package (add-in + MSI)
         shell: pwsh
         run: ./build.ps1 -Configuration Release
 
-      - uses: actions/upload-artifact@v4
+      # GitHub always delivers artifacts as a .zip - unzip once to get the file/folder.
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ThreadModeler-installer
+          path: |
+            dist/*.msi
+            dist/*.msi.sha256
+          if-no-files-found: error
+
+      - name: Upload bundle folder
+        uses: actions/upload-artifact@v4
         with:
           name: cODTthreadModeler.bundle
-          path: dist/cODTthreadModeler.bundle.zip
+          path: dist/cODTthreadModeler.bundle/
           if-no-files-found: error

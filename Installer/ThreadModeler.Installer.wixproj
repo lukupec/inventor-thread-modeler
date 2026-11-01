@@ -1,0 +1,30 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <!--
+    MSI for ThreadModeler (per-machine). Packages the ApplicationPlugins bundle that the add-in build
+    writes to ..\bin\<Configuration>\ - build ThreadModeler.csproj first (build.ps1 does both).
+    WiX 5 is used on purpose: WiX 6+ requires accepting the Open Source Maintenance Fee EULA.
+  -->
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <OutputName>ThreadModeler-$(Version)</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputPath>$(MSBuildThisFileDirectory)..\dist\</OutputPath>
+    <DefineConstants>ProductVersion=$(Version)</DefineConstants>
+    <BundleSourceDir>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\</BundleSourceDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <BindPath Include="$(BundleSourceDir)" BindName="Bundle" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+  <Target Name="CheckBundleBuilt" BeforeTargets="Build">
+    <Error Condition="!Exists('$(BundleSourceDir)PackageContents.xml')"
+           Text="$(BundleSourceDir)PackageContents.xml not found. Build ThreadModeler\ThreadModeler.csproj (-c $(Configuration)) first, or run build.ps1." />
+  </Target>
+
+</Project>

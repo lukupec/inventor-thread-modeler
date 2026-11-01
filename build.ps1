@@ -1,30 +1,45 @@
 <#
 .SYNOPSIS
-  Builds ThreadModeler (net10.0-windows) and packages an Autodesk ApplicationPlugins bundle.
+  Builds ThreadModeler (net10.0-windows), runs the tests and produces the installer.
 
 .DESCRIPTION
-  Output:
-    dist\cODTthreadModeler.bundle\       -> copy to %ProgramData%\Autodesk\ApplicationPlugins\
-    dist\cODTthreadModeler.bundle.zip
+  Output in dist\:
+    ThreadModeler-<version>.msi            per-machine installer (the normal way to install)
+    ThreadModeler-<version>.msi.sha256     checksum (used by the add-in's updater)
+    cODTthreadModeler.bundle\              the raw ApplicationPlugins bundle (manual install alternative)
+    cODTthreadModeler.bundle.zip
 
 .PARAMETER Configuration
   Release (default) or Debug.
 
+.PARAMETER Version
+  Product version (e.g. 30.0.2). Default: the version in Directory.Build.props.
+
+.PARAMETER SkipTests
+  Do not run the unit tests.
+
+.PARAMETER SkipInstaller
+  Do not build the MSI.
+
 .PARAMETER Install
   Also copies the bundle to %ProgramData%\Autodesk\ApplicationPlugins (requires an elevated prompt).
+  For normal installs use the MSI instead.
 
 .PARAMETER InventorInteropPath
-  Optional path to Autodesk.Inventor.Interop.dll. By default the Inventor 2027/2026 installation
-  is used, falling back to References\Autodesk.Inventor.Interop.dll.
+  Optional path to Autodesk.Inventor.Interop.dll to compile against (see docs\BUILDING.md).
 
 .EXAMPLE
   .\build.ps1
-  .\build.ps1 -Configuration Debug -Install
+  .\build.ps1 -Version 30.0.2
+  .\build.ps1 -Configuration Debug -SkipInstaller -Install
 #>
 [CmdletBinding()]
 param(
     [ValidateSet('Release', 'Debug')]
     [string]$Configuration = 'Release',
+    [string]$Version,
+    [switch]$SkipTests,
+    [switch]$SkipInstaller,
     [switch]$Install,
     [string]$InventorInteropPath
 )
@@ -33,33 +48,50 @@ $ErrorActionPreference = 'Stop'
 
 $root       = $PSScriptRoot
 $bundleName = 'cODTthreadModeler.bundle'
-$out        = Join-Path $root "bin\$Configuration\Contents"
+$binDir     = Join-Path $root "bin\$Configuration"
 $dist       = Join-Path $root 'dist'
 $bundle     = Join-Path $dist $bundleName
 $zip        = Join-Path $dist "$bundleName.zip"
 
-if (Test-Path $out) { Remove-Item $out -Recurse -Force }
+function Invoke-Dotnet {
+    & dotnet @args
+    if ($LASTEXITCODE -ne 0) { throw "dotnet $($args[0]) failed ($LASTEXITCODE)" }
+}
 
-$buildArgs = @('build', (Join-Path $root 'ThreadModeler\ThreadModeler.csproj'), '-c', $Configuration)
-if ($InventorInteropPath) { $buildArgs += "-p:InventorInteropPath=$InventorInteropPath" }
-& dotnet @buildArgs
-if ($LASTEXITCODE -ne 0) { throw "dotnet build failed ($LASTEXITCODE)" }
+$props = @()
+if ($Version) { $props += "-p:Version=$Version" }
+if ($InventorInteropPath) { $props += "-p:InventorInteropPath=$InventorInteropPath" }
 
-if (Test-Path $bundle) { Remove-Item $bundle -Recurse -Force }
-if (Test-Path $zip)    { Remove-Item $zip -Force }
-New-Item -ItemType Directory -Path (Join-Path $bundle 'Contents') -Force | Out-Null
+# 1. Add-in -> bin\<Configuration>\ (PackageContents.xml + Contents\)
+if (Test-Path $binDir) { Remove-Item $binDir -Recurse -Force }
+Invoke-Dotnet build (Join-Path $root 'ThreadModeler\ThreadModeler.csproj') -c $Configuration @props
 
-Copy-Item (Join-Path $root 'ThreadModeler\PackageContents.xml') $bundle
-Copy-Item (Join-Path $out '*') (Join-Path $bundle 'Contents') -Recurse
+# 2. Tests
+if (-not $SkipTests) {
+    Invoke-Dotnet test (Join-Path $root 'ThreadModeler.Tests\ThreadModeler.Tests.csproj') -c $Configuration @props
+}
+
+# 3. Bundle folder + zip
+if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
+New-Item -ItemType Directory -Path $dist -Force | Out-Null
+Copy-Item $binDir $bundle -Recurse
 if ($Configuration -eq 'Release') {
     Get-ChildItem $bundle -Recurse -Filter *.pdb | Remove-Item -Force
 }
-
 Compress-Archive -Path $bundle -DestinationPath $zip
 
+# 4. MSI + checksum
+if (-not $SkipInstaller) {
+    Invoke-Dotnet build (Join-Path $root 'Installer\ThreadModeler.Installer.wixproj') -c $Configuration @props
+    Get-ChildItem $dist -Filter *.wixpdb | Remove-Item -Force
+    foreach ($msi in Get-ChildItem $dist -Filter *.msi) {
+        $hash = (Get-FileHash $msi.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        Set-Content -Path "$($msi.FullName).sha256" -Value "$hash  $($msi.Name)" -Encoding ascii -NoNewline
+    }
+}
+
 Write-Host ""
-Write-Host "Bundle: $bundle"
-Write-Host "Zip:    $zip"
+Get-ChildItem $dist | ForEach-Object { Write-Host "  dist\$($_.Name)" }
 
 if ($Install) {
     $target = Join-Path $env:ProgramData "Autodesk\ApplicationPlugins\$bundleName"

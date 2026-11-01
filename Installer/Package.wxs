@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  coolOrange ThreadModeler for Autodesk Inventor - per-machine MSI.
+
+  Installs the ApplicationPlugins bundle to
+    C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle
+  where Inventor 2026 / 2027 pick it up automatically.
+
+  The UpgradeCode is the one of the original coolOrange MSI, so older installs are replaced.
+
+  Public properties:
+    DISABLEUPDATECHECK=1   turn off the add-in's automatic update check for all users
+                           (HKLM\SOFTWARE\coolOrange\ThreadModeler\DisableUpdateCheck = 1)
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="coolOrange ThreadModeler for Autodesk Inventor"
+           Manufacturer="coolOrange s.r.l"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="87CF466A-9CB2-464D-B971-1B6EB514A727"
+           Scope="perMachine"
+           Language="1033"
+           Compressed="yes">
+
+    <SummaryInformation Description="Modeled threads from Inventor thread features - add-in for Autodesk Inventor 2026 (2026.4+) and 2027" />
+
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="ProductIcon" SourceFile="..\ThreadModeler\resources\threadModeler.ico" />
+    <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/lukupec/inventor-thread-modeler" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/lukupec/inventor-thread-modeler/blob/master/docs/INSTALL.md" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <Property Id="DISABLEUPDATECHECK" Secure="yes" />
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="AutodeskFolder" Name="Autodesk">
+        <Directory Id="ApplicationPluginsFolder" Name="ApplicationPlugins">
+          <Directory Id="INSTALLFOLDER" Name="cODTthreadModeler.bundle" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="ThreadModeler" Title="ThreadModeler" AllowAbsent="no">
+      <!-- The complete bundle: PackageContents.xml + Contents\ (add-in, .addin, log4net, thread templates). -->
+      <Files Directory="INSTALLFOLDER" Include="!(bindpath.Bundle)**" />
+
+      <Component Id="DisableUpdateCheckPolicy" Directory="INSTALLFOLDER" Condition="DISABLEUPDATECHECK = 1" Bitness="always64">
+        <RegistryValue Root="HKLM" Key="SOFTWARE\coolOrange\ThreadModeler"
+                       Name="DisableUpdateCheck" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </Feature>
+
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+  </Package>
+</Wix>

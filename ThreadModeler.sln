@@ -5,10 +5,15 @@ VisualStudioVersion = 18.0.0.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ThreadModeler", "ThreadModeler\ThreadModeler.csproj", "{32B3F8AC-81BF-4EF1-B164-085566469162}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ThreadModeler.Tests", "ThreadModeler.Tests\ThreadModeler.Tests.csproj", "{19706DB5-ECA0-4925-A50A-A7B0A2F7D587}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E5158CA7-5B93-4891-8332-FCCC6109EF9A}"
 	ProjectSection(SolutionItems) = preProject
 		build.ps1 = build.ps1
 		build.sh = build.sh
+		Directory.Build.props = Directory.Build.props
+		Installer\Package.wxs = Installer\Package.wxs
+		Installer\ThreadModeler.Installer.wixproj = Installer\ThreadModeler.Installer.wixproj
 		ProductInfo.cs = ProductInfo.cs
 		README.md = README.md
 	EndProjectSection
@@ -23,6 +28,10 @@ Global
 		{32B3F8AC-81BF-4EF1-B164-085566469162}.Debug|x64.Build.0 = Debug|x64
 		{32B3F8AC-81BF-4EF1-B164-085566469162}.Release|x64.ActiveCfg = Release|x64
 		{32B3F8AC-81BF-4EF1-B164-085566469162}.Release|x64.Build.0 = Release|x64
+		{19706DB5-ECA0-4925-A50A-A7B0A2F7D587}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{19706DB5-ECA0-4925-A50A-A7B0A2F7D587}.Debug|x64.Build.0 = Debug|Any CPU
+		{19706DB5-ECA0-4925-A50A-A7B0A2F7D587}.Release|x64.ActiveCfg = Release|Any CPU
+		{19706DB5-ECA0-4925-A50A-A7B0A2F7D587}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
