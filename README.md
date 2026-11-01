@@ -80,6 +80,7 @@ ThreadModeler.Tests/                unit tests (update logic)
 Installer/                          WiX 5 MSI (per-machine)
 .github/workflows/                  build.yml (CI), release.yml (tag -> GitHub release)
 docs/                               documentation
+tools/make_icons.py                 regenerates the icons in ThreadModeler/resources (Pillow)
 ```
 
 ## License

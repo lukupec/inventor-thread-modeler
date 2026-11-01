@@ -123,6 +123,7 @@ MIT License, and the required copyright notices ship with it (`LICENSE.txt`, `TH
 | Update-check policy | `HKLM/HKCU\SOFTWARE\coolOrange\ThreadModeler` | `HKLM/HKCU\SOFTWARE\ThreadModeler` |
 | About dialog | coolOrange splash image | plain dialog: version, license, project link |
 | Help | coolOrange wiki | this repository's documentation |
+| Icons (30.0.4) | orange coolOrange designs, About = "CO" logo | neutral bolt / info / help / refresh icons from `tools/make_icons.py` |
 
 Unchanged on purpose: the add-in ClassId `{90f6009a-a2ed-400f-9cbd-cee55ad30d23}` and the MSI UpgradeCode
 `{87CF466A-9CB2-464D-B971-1B6EB514A727}`. They are identifiers, not branding, and keeping them lets the

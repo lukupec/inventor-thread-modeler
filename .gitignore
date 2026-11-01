@@ -351,3 +351,6 @@ MigrationBackup/
 
 # Packaged bundle output (build.ps1 / build.sh)
 dist/
+
+# Icon generator preview (python3 tools/make_icons.py --preview)
+tools/icons-preview.png

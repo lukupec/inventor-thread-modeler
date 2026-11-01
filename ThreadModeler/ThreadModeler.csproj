@@ -98,6 +98,7 @@
     <EmbeddedResource Include="resources\Help.ico" />
     <EmbeddedResource Include="resources\about.ico" />
     <EmbeddedResource Include="resources\threadModeler.ico" />
+    <EmbeddedResource Include="resources\update.ico" />
   </ItemGroup>
 
   <ItemGroup>

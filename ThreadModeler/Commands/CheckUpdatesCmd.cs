@@ -50,12 +50,12 @@ namespace ThreadModeler.Commands
 
         public override string StandardIconName
         {
-            get { return "ThreadModeler.resources.Help.ico"; }
+            get { return "ThreadModeler.resources.update.ico"; }
         }
 
         public override string LargeIconName
         {
-            get { return "ThreadModeler.resources.Help.ico"; }
+            get { return "ThreadModeler.resources.update.ico"; }
         }
 
         protected override void OnExecute(NameValueMap context)
