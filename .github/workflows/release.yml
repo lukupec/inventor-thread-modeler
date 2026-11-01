@@ -57,6 +57,6 @@ jobs:
             --target '${{ github.sha }}' `
             "dist/ThreadModeler-$v.msi" `
             "dist/ThreadModeler-$v.msi.sha256" `
-            "dist/cODTthreadModeler.bundle.zip" `
+            "dist/ThreadModeler.bundle.zip" `
             --title "ThreadModeler $v" `
             --generate-notes

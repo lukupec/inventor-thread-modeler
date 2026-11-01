@@ -20,7 +20,7 @@ namespace ThreadModeler.Commands
 
         public override string InternalName
         {
-            get { return "coolOrange.ThreadModeler.CheckUpdatesCmd"; }
+            get { return "ThreadModeler.CheckUpdatesCmd"; }
         }
 
         public override CommandTypesEnum Classification
@@ -35,12 +35,12 @@ namespace ThreadModeler.Commands
 
         public override string Description
         {
-            get { return "Checks whether a newer threadModeler version is available"; }
+            get { return "Checks whether a newer ThreadModeler version is available"; }
         }
 
         public override string ToolTipText
         {
-            get { return "Checks whether a newer threadModeler version is available"; }
+            get { return "Checks whether a newer ThreadModeler version is available"; }
         }
 
         public override ButtonDisplayEnum ButtonDisplay

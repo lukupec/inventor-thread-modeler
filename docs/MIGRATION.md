@@ -41,7 +41,7 @@ Sources (Autodesk Developer Blog):
   file and instantiates the class whose `[Guid]` matches `<ClassId>`; no COM registration or manifest is used.
 - `InstallUtils` (RegAsm, `RegistrationServices`, `System.Configuration.Install`) and
   `AdnAddInRegistration` (HKCR CLSID registration) removed – unused, and not applicable to .NET 10 Inventor.
-- `coolOrange.ThreadModeler.Inventor.addin`:
+- `coolOrange.ThreadModeler.Inventor.addin` (renamed `ThreadModeler.Inventor.addin` in 30.0.3):
   `SupportedSoftwareVersionLessThan 24..` replaced by `SupportedSoftwareVersionGreaterThan 29..`
   (Inventor 2026 = 30, 2027 = 31). ClassId/ClientId unchanged.
 - No `UseInventorAssemblyContext` element. The add-in loads into Inventor's shared assembly load context (the
@@ -50,8 +50,8 @@ Sources (Autodesk Developer Blog):
   is back in the original UTF-16 format without comments.
 
 ### Packaging, installer and updates
-- The add-in is an Autodesk **ApplicationPlugins bundle** (`cODTthreadModeler.bundle`, the same folder
-  name the original MSI used). The build writes it complete to `bin\<Configuration>\`.
+- The add-in is an Autodesk **ApplicationPlugins bundle**: `ThreadModeler.bundle` since 30.0.3, and
+  `cODTthreadModeler.bundle` (the folder name of the original MSI) up to 30.0.2. The build writes it complete to `bin\<Configuration>\`.
 - `PackageContents.xml`: `OS="Win64"`, `SeriesMin="R2026" SeriesMax="R2027"`, a single component entry
   for the `.addin`. The non-existent PostSharp / Log4PostSharp entries are removed. It is a template;
   the version is filled in from `Directory.Build.props`.
@@ -93,7 +93,7 @@ Sources (Autodesk Developer Blog):
 
 ### Logging
 - **log4net removed** (30.0.2). It is replaced by `Addin\AddinLog.cs`, a small built-in logger that writes to
-  `%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log`.
+  `%LOCALAPPDATA%\ThreadModeler\ThreadModeler.log`.
   - 30.0.0 and 30.0.1 used the `log4net` 3.5.0 package, loaded through a static field of the add-in class.
   - If Inventor or another add-in (Vault, for example) had already loaded a different log4net version into the
     shared load context, .NET threw `FileLoadException` while Inventor created the add-in, and the add-in stayed
@@ -106,6 +106,27 @@ Sources (Autodesk Developer Blog):
 - Single source: `<Version>` in `Directory.Build.props`. The assembly version attributes are generated
   by the SDK, and the release workflow overrides the version from the git tag.
 - Major version = Inventor internal version of the first supported release (30 = Inventor 2026).
+
+### Renaming (30.0.3)
+The add-in and installer no longer carry the coolOrange name. The project remains a derivative of
+[coolOrangeApps/inventor-thread-modeler](https://github.com/coolOrangeApps/inventor-thread-modeler) under the
+MIT License, and the required copyright notices ship with it (`LICENSE.txt`, `THIRD-PARTY-NOTICES.txt`).
+
+| | up to 30.0.2 | 30.0.3 |
+|---|---|---|
+| Ribbon | tab *coolOrange*, panel *threadModeler* | tab and panel *ThreadModeler* |
+| Add-In Manager | *coolOrange - ThreadModeler* | *ThreadModeler* |
+| Windows Apps / MSI | *coolOrange ThreadModeler for Autodesk Inventor*, publisher *coolOrange s.r.l* | *ThreadModeler for Autodesk Inventor*, publisher *ThreadModeler* |
+| Bundle folder | `cODTthreadModeler.bundle` | `ThreadModeler.bundle` |
+| Command internal names | `coolOrange.ThreadModeler.*` | `ThreadModeler.*` |
+| Log, update state | `%LOCALAPPDATA%\coolOrange\ThreadModeler\` | `%LOCALAPPDATA%\ThreadModeler\` |
+| Update-check policy | `HKLM/HKCU\SOFTWARE\coolOrange\ThreadModeler` | `HKLM/HKCU\SOFTWARE\ThreadModeler` |
+| About dialog | coolOrange splash image | plain dialog: version, license, project link |
+| Help | coolOrange wiki | this repository's documentation |
+
+Unchanged on purpose: the add-in ClassId `{90f6009a-a2ed-400f-9cbd-cee55ad30d23}` and the MSI UpgradeCode
+`{87CF466A-9CB2-464D-B971-1B6EB514A727}`. They are identifiers, not branding, and keeping them lets the
+30.0.3 MSI upgrade earlier installs in place.
 
 ## Not changed
 - Thread generation logic (`Worker.cs`, `Toolkit.cs`; apart from the tapered-thread fix above), dialogs

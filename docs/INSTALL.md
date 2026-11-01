@@ -17,15 +17,16 @@ No separate .NET installation is needed. The add-in runs on the .NET 10 runtime 
    [latest release](https://github.com/lukupec/inventor-thread-modeler/releases/latest).
 2. Double-click it, accept the license, and confirm the Windows administrator prompt.
    If Inventor is running, the installer asks you to close it.
-3. Start Inventor and open a part. The commands are on the **coolOrange** ribbon tab, in the **threadModeler** panel.
+3. Start Inventor and open a part. The commands are on the **ThreadModeler** ribbon tab.
 
 The MSI installs the add-in for all users to
 
 ```
-C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle
+C:\ProgramData\Autodesk\ApplicationPlugins\ThreadModeler.bundle
 ```
 
-It also replaces older ThreadModeler installations made with the original coolOrange MSI.
+It also upgrades older installations made with an earlier ThreadModeler MSI (up to 30.0.2 they used the folder
+`cODTthreadModeler.bundle`, which the upgrade removes).
 
 > The MSI is not code-signed. If Microsoft Defender SmartScreen shows *Windows protected your PC*,
 > click **More info → Run anyway**.
@@ -51,21 +52,21 @@ The add-in checks for new versions by itself:
     Inventor is never closed for you.
   - **Remind me later**: asks again at the next daily check.
   - **Skip this version**: is not offered again. A later version is.
-- **Check for Updates** in the threadModeler panel's slide-out checks immediately.
+- **Check for Updates** in the ThreadModeler panel's slide-out checks immediately.
 
 Turn the automatic check off:
 
 | Scope | How |
 |---|---|
-| All users | Install with `DISABLEUPDATECHECK=1`, or set `HKLM\SOFTWARE\coolOrange\ThreadModeler` → `DisableUpdateCheck` (DWORD) = `1` |
-| Current user | Set `HKCU\SOFTWARE\coolOrange\ThreadModeler` → `DisableUpdateCheck` (DWORD) = `1` |
+| All users | Install with `DISABLEUPDATECHECK=1`, or set `HKLM\SOFTWARE\ThreadModeler` → `DisableUpdateCheck` (DWORD) = `1` |
+| Current user | Set `HKCU\SOFTWARE\ThreadModeler` → `DisableUpdateCheck` (DWORD) = `1` |
 
-The update state (last check, skipped version) is kept in `%LOCALAPPDATA%\coolOrange\ThreadModeler\update.json`.
+The update state (last check, skipped version) is kept in `%LOCALAPPDATA%\ThreadModeler\update.json`.
 
 ## Use
 
 1. Open a part (`.ipt`) that contains one or more **Thread** features.
-2. On the **coolOrange** ribbon tab, in the **threadModeler** panel, click **threadModeler**.
+2. On the **ThreadModeler** ribbon tab, click **ThreadModeler**.
 3. The *Thread Modeler Control* dialog opens. Pick thread features in the model; they appear under
    *Selected Threads*. Optionally adjust *Pitch Offset* (thread pitch + %), then click **Ok**.
    The *Thread Sketch Template* field is filled automatically from `Contents\Thread Templates`.
@@ -75,15 +76,15 @@ The update state (last check, skipped version) is kept in `%LOCALAPPDATA%\coolOr
 
 ## Uninstall
 
-*Settings → Apps → Installed apps → coolOrange ThreadModeler for Autodesk Inventor → Uninstall.*
+*Settings → Apps → Installed apps → ThreadModeler for Autodesk Inventor → Uninstall.*
 
 To keep it installed but not loaded, use *Tools → Add-Ins* in Inventor. Clear **Loaded** / **Load Automatically**
-for *coolOrange - ThreadModeler*.
+for *ThreadModeler*.
 
 ## Manual install (without the MSI)
 
 1. Close Inventor.
-2. From the release, download `cODTthreadModeler.bundle.zip` and unzip it. You get the folder `cODTthreadModeler.bundle`.
+2. From the release, download `ThreadModeler.bundle.zip` and unzip it. You get the folder `ThreadModeler.bundle`.
 3. Copy that folder to `C:\ProgramData\Autodesk\ApplicationPlugins\` (administrator rights needed).
 4. Unblock the files: in PowerShell inside the bundle folder, run `Get-ChildItem -Recurse | Unblock-File`.
 
@@ -94,7 +95,7 @@ Uninstall by deleting the folder. The automatic update check also works for manu
 The add-in writes a short log per user to
 
 ```
-%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log
+%LOCALAPPDATA%\ThreadModeler\ThreadModeler.log
 ```
 
 It contains how it was loaded (runtime, load context, Inventor interop version), activation, update checks
@@ -107,8 +108,9 @@ If the add-in fails while loading, the error is shown in a message box and appen
 
 | Symptom | Check |
 |---|---|
-| *Automatic / Unloaded* in the Add-In Manager, no message | 1. Inventor 2026 below **Update 2026.4**: update Inventor. To see the runtime Inventor uses, run this while Inventor is open: `(Get-Process Inventor).Modules \| ? ModuleName -eq coreclr.dll \| select FileName`. The path must contain `Microsoft.NETCore.App\10.` 2. Check the end of `%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log`. If there is no entry from this Inventor session, Inventor never loaded `ThreadModeler.dll`. If there is a *loaded* line but no *Activated* line, the log shows why. |
-| Message "ThreadModeler failed to load" | Send `%TEMP%\ThreadModeler-load-error.txt` and `threadModeler.log` along with the issue |
-| Add-in not listed in *Tools → Add-Ins* | `C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle\PackageContents.xml` must exist |
+| *Automatic / Unloaded* in the Add-In Manager, no message | 1. Inventor 2026 below **Update 2026.4**: update Inventor. To see the runtime Inventor uses, run this while Inventor is open: `(Get-Process Inventor).Modules \| ? ModuleName -eq coreclr.dll \| select FileName`. The path must contain `Microsoft.NETCore.App\10.` 2. Check the end of `%LOCALAPPDATA%\ThreadModeler\ThreadModeler.log`. If there is no entry from this Inventor session, Inventor never loaded `ThreadModeler.dll`. If there is a *loaded* line but no *Activated* line, the log shows why. |
+| Message "ThreadModeler failed to load" | Send `%TEMP%\ThreadModeler-load-error.txt` and `ThreadModeler.log` along with the issue |
+| Add-in not listed in *Tools → Add-Ins* | `C:\ProgramData\Autodesk\ApplicationPlugins\ThreadModeler.bundle\PackageContents.xml` must exist |
+| Add-in listed twice, or the old name *coolOrange - ThreadModeler* still shows | A manually copied old bundle is still there: delete `C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle` |
 | Update check says it could not connect | The PC needs HTTPS access to `api.github.com`, `github.com` and `objects.githubusercontent.com` (proxy/firewall) |
 | *Thread Sketch Template* field is empty | `Contents\Thread Templates\*.ipt` must sit next to `ThreadModeler.dll`, or pick a template with **...** |

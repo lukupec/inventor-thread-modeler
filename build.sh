@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds ThreadModeler (net10.0-windows), runs the tests and packages the ApplicationPlugins bundle:
-#   dist/cODTthreadModeler.bundle/   and   dist/cODTthreadModeler.bundle.zip
+#   dist/ThreadModeler.bundle/   and   dist/ThreadModeler.bundle.zip
 # The MSI installer needs Windows - use build.ps1 there.
 # Usage: ./build.sh [Release|Debug] [extra dotnet args, e.g. -p:Version=30.0.2]
 set -euo pipefail
@@ -9,7 +9,7 @@ CONFIG="${1:-Release}"
 shift || true
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUNDLE_NAME="cODTthreadModeler.bundle"
+BUNDLE_NAME="ThreadModeler.bundle"
 BIN="$ROOT/bin/$CONFIG"
 DIST="$ROOT/dist"
 

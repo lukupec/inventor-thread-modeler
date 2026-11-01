@@ -5,7 +5,7 @@
 // into the same process; an add-in that depends on a different version can then fail to load silently.
 // This logger only uses the .NET base library.
 //
-// Log file: %LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log (rolled over at 1 MB)
+// Log file: %LOCALAPPDATA%\ThreadModeler\ThreadModeler.log (rolled over at 1 MB)
 // Also written to the debugger output (Sysinternals DebugView).
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -22,9 +22,9 @@ namespace ThreadModeler.Addin
         private static readonly object Sync = new object();
 
         public static readonly string Directory = System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "coolOrange", "ThreadModeler");
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ThreadModeler");
 
-        public static readonly string Path = System.IO.Path.Combine(Directory, "threadModeler.log");
+        public static readonly string Path = System.IO.Path.Combine(Directory, "ThreadModeler.log");
 
         public static void Debug(string message) { Write("DEBUG", message, null); }
         public static void Info(string message) { Write("INFO ", message, null); }

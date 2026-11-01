@@ -18,7 +18,7 @@ namespace ThreadModeler.Commands
 
         public override string InternalName
         {
-            get { return "coolOrange.ThreadModeler.HelpCtrlCmd"; }
+            get { return "ThreadModeler.HelpCtrlCmd"; }
         }
 
         public override CommandTypesEnum Classification
@@ -37,12 +37,12 @@ namespace ThreadModeler.Commands
 
         public override string Description
         {
-            get { return "Displays threadModeler help"; }
+            get { return "Opens the ThreadModeler documentation"; }
         }
 
         public override string ToolTipText
         {
-            get { return "Displays threadModeler help"; }
+            get { return "Opens the ThreadModeler documentation"; }
         }
 
         public override ButtonDisplayEnum ButtonDisplay
@@ -68,7 +68,7 @@ namespace ThreadModeler.Commands
 
         protected override void OnExecute(NameValueMap context)
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("http://wiki.coolorange.com/display/threadModeler") { UseShellExecute = true });
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(ThreadModeler.Update.UpdateLogic.ProjectUrl + "/blob/master/docs/INSTALL.md#use") { UseShellExecute = true });
             Terminate();
         }
 

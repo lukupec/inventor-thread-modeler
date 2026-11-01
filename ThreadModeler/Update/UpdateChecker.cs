@@ -6,7 +6,7 @@
 // The update is installed after Inventor exits (msiexec /passive), so Inventor is never closed with
 // unsaved work.
 //
-// Disable for all users:  HKLM\SOFTWARE\coolOrange\ThreadModeler  DisableUpdateCheck = 1 (DWORD)
+// Disable for all users:  HKLM\SOFTWARE\ThreadModeler  DisableUpdateCheck = 1 (DWORD)
 //   (the MSI writes this with DISABLEUPDATECHECK=1). Per user: HKCU, same value.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -26,7 +26,7 @@ namespace ThreadModeler.Update
 {
     internal sealed class UpdateChecker : IDisposable
     {
-        private const string PolicyKey = @"SOFTWARE\coolOrange\ThreadModeler";
+        private const string PolicyKey = @"SOFTWARE\ThreadModeler";
         private const string PolicyValue = "DisableUpdateCheck";
         private const string Caption = "ThreadModeler update";
 
@@ -59,7 +59,7 @@ namespace ThreadModeler.Update
             _installed = InstalledVersion;
             _stateFile = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "coolOrange", "ThreadModeler", "update.json");
+                "ThreadModeler", "update.json");
         }
 
         /// <summary>Creates the checker (call from Activate, on Inventor's UI thread) and schedules the automatic check.</summary>

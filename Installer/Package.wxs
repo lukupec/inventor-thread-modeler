@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  coolOrange ThreadModeler for Autodesk Inventor - per-machine MSI.
+  ThreadModeler for Autodesk Inventor - per-machine MSI.
 
   Installs the ApplicationPlugins bundle to
-    C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle
+    C:\ProgramData\Autodesk\ApplicationPlugins\ThreadModeler.bundle
   where Inventor 2026 / 2027 pick it up automatically.
 
-  The UpgradeCode is the one of the original coolOrange MSI, so older installs are replaced.
+  The UpgradeCode is unchanged since the original MSI (do not change it), so all older installs are upgraded.
+  Up to 30.0.2 the bundle folder was cODTthreadModeler.bundle; the upgrade removes it.
 
   Public properties:
     DISABLEUPDATECHECK=1   turn off the add-in's automatic update check for all users
-                           (HKLM\SOFTWARE\coolOrange\ThreadModeler\DisableUpdateCheck = 1)
+                           (HKLM\SOFTWARE\ThreadModeler\DisableUpdateCheck = 1)
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
-  <Package Name="coolOrange ThreadModeler for Autodesk Inventor"
-           Manufacturer="coolOrange s.r.l"
+  <Package Name="ThreadModeler for Autodesk Inventor"
+           Manufacturer="ThreadModeler"
            Version="$(var.ProductVersion)"
            UpgradeCode="87CF466A-9CB2-464D-B971-1B6EB514A727"
            Scope="perMachine"
@@ -39,17 +40,17 @@
     <StandardDirectory Id="CommonAppDataFolder">
       <Directory Id="AutodeskFolder" Name="Autodesk">
         <Directory Id="ApplicationPluginsFolder" Name="ApplicationPlugins">
-          <Directory Id="INSTALLFOLDER" Name="cODTthreadModeler.bundle" />
+          <Directory Id="INSTALLFOLDER" Name="ThreadModeler.bundle" />
         </Directory>
       </Directory>
     </StandardDirectory>
 
     <Feature Id="ThreadModeler" Title="ThreadModeler" AllowAbsent="no">
-      <!-- The complete bundle: PackageContents.xml + Contents\ (add-in, .addin, thread templates). -->
+      <!-- The complete bundle: PackageContents.xml + Contents\ (add-in, .addin, thread templates, license notices). -->
       <Files Directory="INSTALLFOLDER" Include="!(bindpath.Bundle)**" />
 
       <Component Id="DisableUpdateCheckPolicy" Directory="INSTALLFOLDER" Condition="DISABLEUPDATECHECK = 1" Bitness="always64">
-        <RegistryValue Root="HKLM" Key="SOFTWARE\coolOrange\ThreadModeler"
+        <RegistryValue Root="HKLM" Key="SOFTWARE\ThreadModeler"
                        Name="DisableUpdateCheck" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </Feature>

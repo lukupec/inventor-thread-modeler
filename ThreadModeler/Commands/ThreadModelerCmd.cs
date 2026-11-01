@@ -42,7 +42,7 @@ namespace ThreadModeler.Commands
         {
             get
             {
-                return "threadModeler";
+                return "ThreadModeler";
             }
         }
 
@@ -50,7 +50,7 @@ namespace ThreadModeler.Commands
         {
             get
             {
-                return "coolOrange.ThreadModeler.ThreadModelerCmd";
+                return "ThreadModeler.ThreadModelerCmd";
             }
         }
 

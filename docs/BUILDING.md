@@ -31,13 +31,14 @@ bin/<Configuration>/                 the bundle as built (PackageContents.xml + 
 dist/
   ThreadModeler-<version>.msi        installer (build.ps1 only)
   ThreadModeler-<version>.msi.sha256
-  cODTthreadModeler.bundle/
+  ThreadModeler.bundle/
     PackageContents.xml
     Contents/
-      coolOrange.ThreadModeler.Inventor.addin
+      ThreadModeler.Inventor.addin
       ThreadModeler.dll, .deps.json, .runtimeconfig.json
+      LICENSE.txt, THIRD-PARTY-NOTICES.txt
       Thread Templates/BSW Template.ipt, ISO Template.ipt
-  cODTthreadModeler.bundle.zip
+  ThreadModeler.bundle.zip
 ```
 
 Individual steps:
@@ -78,19 +79,19 @@ dotnet build ThreadModeler\ThreadModeler.csproj -p:InventorInteropPath="C:\Progr
 
 1. Build `Debug|x64` and install it as a bundle: `.\build.ps1 -Configuration Debug -SkipInstaller -Install` (elevated).
    Alternatively, create a directory junction
-   `C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle` → `<repo>\bin\Debug`, so every build is picked up.
+   `C:\ProgramData\Autodesk\ApplicationPlugins\ThreadModeler.bundle` → `<repo>\bin\Debug`, so every build is picked up.
 2. The Debug configuration starts `C:\Program Files\Autodesk\Inventor 2027\Bin\Inventor.exe`.
    Change `StartProgram` in `ThreadModeler.csproj` for Inventor 2026.
 3. Press F5. Breakpoints in `StandardAddInServer.Activate` are hit while Inventor starts.
 
 Close Inventor before rebuilding, because it locks `ThreadModeler.dll`.
-If loading fails, see `%LOCALAPPDATA%\coolOrange\ThreadModeler\threadModeler.log` and `%TEMP%\ThreadModeler-load-error.txt`.
+If loading fails, see `%LOCALAPPDATA%\ThreadModeler\ThreadModeler.log` and `%TEMP%\ThreadModeler-load-error.txt`.
 
 **Do not add third-party NuGet dependencies lightly.** Inventor loads every add-in and its own components into one
 process. If another component has already loaded a different version of the same library, .NET refuses to load
 yours, and the add-in fails silently while Inventor creates it. This is what broke 30.0.1 with log4net.
 
-To test the updater without waiting a day, delete `%LOCALAPPDATA%\coolOrange\ThreadModeler\update.json`
+To test the updater without waiting a day, delete `%LOCALAPPDATA%\ThreadModeler\update.json`
 or use **Check for Updates**.
 
 ## Releasing a new version
@@ -104,7 +105,7 @@ or use **Check for Updates**.
      git push origin v30.0.2
      ```
 3. `.github/workflows/release.yml` builds that version, runs the tests, and creates the GitHub release with
-   `ThreadModeler-30.0.2.msi`, `ThreadModeler-30.0.2.msi.sha256` and `cODTthreadModeler.bundle.zip`.
+   `ThreadModeler-30.0.2.msi`, `ThreadModeler-30.0.2.msi.sha256` and `ThreadModeler.bundle.zip`.
 
 Installed add-ins find the new release at their next daily check. The updater:
 
@@ -119,4 +120,4 @@ If the repository is renamed or moved, update `RepoOwner`/`RepoName` in `ThreadM
 
 `.github/workflows/build.yml` runs on every push and pull request, on `windows-latest`. It runs `build.ps1`,
 which builds, tests and packages, then uploads two artifacts: **ThreadModeler-installer** (MSI + checksum) and
-**cODTthreadModeler.bundle** (the bundle folder). GitHub always downloads an artifact as a zip, so unzip it once.
+**ThreadModeler.bundle** (the bundle folder). GitHub always downloads an artifact as a zip, so unzip it once.

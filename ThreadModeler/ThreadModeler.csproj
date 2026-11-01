@@ -102,7 +102,10 @@
 
   <ItemGroup>
     <Content Include="Thread Templates\*.ipt" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="coolOrange.ThreadModeler.Inventor.addin" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="ThreadModeler.Inventor.addin" CopyToOutputDirectory="PreserveNewest" />
+    <!-- License notices travel with the binaries (MIT and Autodesk ADN notices require it). -->
+    <Content Include="..\LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
     <!-- Template: @VERSION@ is replaced and the result written to the bundle root (see target below). -->
     <None Include="PackageContents.xml" />
     <None Include="ReadMe.txt" />

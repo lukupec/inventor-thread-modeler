@@ -6,9 +6,9 @@
 // associated with an assembly.
 //
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("coolOrange s.r.l")]
-[assembly: AssemblyProduct("Inventor ThreadModeler addin")]
-[assembly: AssemblyCopyright("Copyright © 2011-2026 coolOrange s.r.l")]
+[assembly: AssemblyCompany("ThreadModeler")]
+[assembly: AssemblyProduct("ThreadModeler for Autodesk Inventor")]
+[assembly: AssemblyCopyright("MIT License - see LICENSE.txt and THIRD-PARTY-NOTICES.txt")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

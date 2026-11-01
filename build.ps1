@@ -6,8 +6,8 @@
   Output in dist\:
     ThreadModeler-<version>.msi            per-machine installer (the normal way to install)
     ThreadModeler-<version>.msi.sha256     checksum (used by the add-in's updater)
-    cODTthreadModeler.bundle\              the raw ApplicationPlugins bundle (manual install alternative)
-    cODTthreadModeler.bundle.zip
+    ThreadModeler.bundle\              the raw ApplicationPlugins bundle (manual install alternative)
+    ThreadModeler.bundle.zip
 
 .PARAMETER Configuration
   Release (default) or Debug.
@@ -47,7 +47,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root       = $PSScriptRoot
-$bundleName = 'cODTthreadModeler.bundle'
+$bundleName = 'ThreadModeler.bundle'
 $binDir     = Join-Path $root "bin\$Configuration"
 $dist       = Join-Path $root 'dist'
 $bundle     = Join-Path $dist $bundleName

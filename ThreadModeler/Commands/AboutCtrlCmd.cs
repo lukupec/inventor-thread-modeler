@@ -20,7 +20,7 @@ namespace ThreadModeler.Commands
 
         public override string InternalName
         {
-            get { return "coolOrange.ThreadModeler.AboutCtrlCmd"; }
+            get { return "ThreadModeler.AboutCtrlCmd"; }
         }
 
         public override CommandTypesEnum Classification
@@ -39,12 +39,12 @@ namespace ThreadModeler.Commands
 
         public override string Description
         {
-            get { return "Displays threadModeler Info"; }
+            get { return "About ThreadModeler"; }
         }
 
         public override string ToolTipText
         {
-            get { return "Displays threadModeler Info"; }
+            get { return "About ThreadModeler"; }
         }
 
         public override ButtonDisplayEnum ButtonDisplay
@@ -70,14 +70,7 @@ namespace ThreadModeler.Commands
 
         protected override void OnExecute(NameValueMap context)
         {
-			var frmSplashAbout = new FrmSplash()
-	        {
-		        lblInfo = { Text = "Free License" },
-		        versionlbl = { Text = "2019" },
-		        buildlbl = { Text = Assembly.GetExecutingAssembly().GetName().Version.ToString() },
-		        BackgroundImage = resources.threadModeler
-	        };
-	        RegisterCommandForm(frmSplashAbout, true);
+            RegisterCommandForm(new AboutForm(), true);
         }
 
         protected override void OnHelp(NameValueMap context)

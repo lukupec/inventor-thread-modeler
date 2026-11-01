@@ -22,7 +22,7 @@ namespace ThreadModeler.Update
         public string Sha256Url { get; set; }
     }
 
-    /// <summary>Per-user update state, stored as JSON in %LOCALAPPDATA%\coolOrange\ThreadModeler\update.json.</summary>
+    /// <summary>Per-user update state, stored as JSON in %LOCALAPPDATA%\ThreadModeler\update.json.</summary>
     public sealed class UpdateState
     {
         public DateTime? LastCheckUtc { get; set; }
@@ -34,6 +34,10 @@ namespace ThreadModeler.Update
     {
         public const string RepoOwner = "lukupec";
         public const string RepoName = "inventor-thread-modeler";
+
+        /// <summary>Project home page (About and Help link here).</summary>
+        public static readonly string ProjectUrl =
+            "https://github.com/" + RepoOwner + "/" + RepoName;
 
         public static readonly string LatestReleaseApiUrl =
             "https://api.github.com/repos/" + RepoOwner + "/" + RepoName + "/releases/latest";

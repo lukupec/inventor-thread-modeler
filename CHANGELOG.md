@@ -1,5 +1,18 @@
 # Changelog
 
+## 30.0.3 – 2026-11-01
+
+- **Renamed to ThreadModeler.** The coolOrange name and logo are removed from the add-in and installer:
+  - ribbon tab and panel *ThreadModeler*;
+  - Add-In Manager entry *ThreadModeler*;
+  - Windows Apps entry *ThreadModeler for Autodesk Inventor*, publisher *ThreadModeler*;
+  - bundle folder `ThreadModeler.bundle`;
+  - log and settings in `%LOCALAPPDATA%\ThreadModeler`, policy key `SOFTWARE\ThreadModeler`.
+  The MSI upgrades 30.0.x installs in place.
+- New About dialog (version, license, project link); Help opens this repository's documentation.
+- `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt` (MIT notice of the original coolOrange project, Autodesk ADN notice)
+  are installed with the add-in.
+
 ## 30.0.2 – 2026-11-01
 
 - **Fix: add-in stayed "Automatic / Unloaded" in Inventor 2026.4.** The add-in depended on log4net 3.5. When

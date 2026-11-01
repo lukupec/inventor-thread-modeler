@@ -17,7 +17,7 @@ namespace ThreadModeler.Tests
   ""assets"": [
     { ""name"": ""ThreadModeler-30.0.2.msi.sha256"", ""browser_download_url"": ""https://example.test/ThreadModeler-30.0.2.msi.sha256"" },
     { ""name"": ""ThreadModeler-30.0.2.msi"", ""browser_download_url"": ""https://example.test/ThreadModeler-30.0.2.msi"" },
-    { ""name"": ""cODTthreadModeler.bundle.zip"", ""browser_download_url"": ""https://example.test/bundle.zip"" }
+    { ""name"": ""ThreadModeler.bundle.zip"", ""browser_download_url"": ""https://example.test/bundle.zip"" }
   ]
 }";
 

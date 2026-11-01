@@ -33,14 +33,14 @@ Download ThreadModeler-<version>.msi from
 https://github.com/lukupec/inventor-thread-modeler/releases/latest
 and run it. It installs the add-in for all users to
 
-    %ProgramData%\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle
+    %ProgramData%\Autodesk\ApplicationPlugins\ThreadModeler.bundle
 
 Newer versions are offered automatically inside Inventor and installed
 after Inventor is closed. See docs\INSTALL.md.
 
 Usage
 -----
-Once loaded, the coolOrange ribbon tab containing the threadModeler
+Once loaded, the ThreadModeler ribbon tab containing the ThreadModeler
 panel is available in the Part environment.
 
 When you run the threadModeler command a new modeless form is
@@ -54,8 +54,8 @@ You can unload the plugin without uninstalling it by unchecking the
 Manager. Unchecking "Load Automatically" causes the plugin not to be
 loaded in future sessions of Inventor.
 
-To remove the plugin completely, uninstall "coolOrange ThreadModeler
-for Autodesk Inventor" in Settings > Apps.
+To remove the plugin completely, uninstall "ThreadModeler for
+Autodesk Inventor" in Settings > Apps.
 
 Known Issues
 ------------
@@ -78,8 +78,8 @@ See README.md and the docs folder of the repository.
 
 Feedback
 --------
-Email us at support@coolorange.com with feedback or requests for
-enhancements.
+Please open an issue at
+https://github.com/lukupec/inventor-thread-modeler/issues
 
 Release History
 ---------------
@@ -91,6 +91,8 @@ Release History
 
 
 30.0 Ported to .NET 10 for Inventor 2026 (2026.4+) and Inventor 2027.
+     Renamed to ThreadModeler (30.0.3); derived from coolOrange threadModeler,
+     https://github.com/coolOrangeApps/inventor-thread-modeler (MIT License).
 
 
 (C) Copyright 2011 by coolOrange s.r.l
