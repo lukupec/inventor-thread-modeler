@@ -39,12 +39,14 @@
             "Pitch1",
             "Standard",
             "Exterior"}, -1);
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Controller));
+            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.bOk = new System.Windows.Forms.Button();
             this.bCancel = new System.Windows.Forms.Button();
-            this.bSelect = new System.Windows.Forms.Button();
             this.gbTemplate = new System.Windows.Forms.GroupBox();
-            this.tbTemplate = new System.Windows.Forms.TextBox();
+            this.cbStandard = new System.Windows.Forms.ComboBox();
+            this.lbTemplateFile = new System.Windows.Forms.Label();
             this.lvFeatures = new System.Windows.Forms.ListView();
             this.hThread = new System.Windows.Forms.ColumnHeader();
             this.hPitch = new System.Windows.Forms.ColumnHeader();
@@ -78,36 +80,36 @@
             this.bCancel.Text = "Cancel";
             this.bCancel.UseVisualStyleBackColor = true;
             this.bCancel.Click += new System.EventHandler(this.bCancel_Click);
-            // 
-            // bSelect
-            // 
-            this.bSelect.Location = new System.Drawing.Point(314, 19);
-            this.bSelect.Name = "bSelect";
-            this.bSelect.Size = new System.Drawing.Size(32, 20);
-            this.bSelect.TabIndex = 2;
-            this.bSelect.Text = "...";
-            this.bSelect.UseVisualStyleBackColor = true;
-            this.bSelect.Click += new System.EventHandler(this.bSelect_Click);
-            // 
+            //
             // gbTemplate
-            // 
-            this.gbTemplate.Controls.Add(this.tbTemplate);
-            this.gbTemplate.Controls.Add(this.bSelect);
+            //
+            this.gbTemplate.Controls.Add(this.cbStandard);
+            this.gbTemplate.Controls.Add(this.lbTemplateFile);
             this.gbTemplate.Location = new System.Drawing.Point(12, 12);
             this.gbTemplate.Name = "gbTemplate";
             this.gbTemplate.Size = new System.Drawing.Size(353, 51);
             this.gbTemplate.TabIndex = 3;
             this.gbTemplate.TabStop = false;
-            this.gbTemplate.Text = "Thread Sketch Template";
-            // 
-            // tbTemplate
-            // 
-            this.tbTemplate.Location = new System.Drawing.Point(6, 19);
-            this.tbTemplate.Name = "tbTemplate";
-            this.tbTemplate.ReadOnly = true;
-            this.tbTemplate.Size = new System.Drawing.Size(302, 20);
-            this.tbTemplate.TabIndex = 3;
-            // 
+            this.gbTemplate.Text = "Thread Profile";
+            //
+            // cbStandard
+            //
+            this.cbStandard.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbStandard.Location = new System.Drawing.Point(6, 19);
+            this.cbStandard.Name = "cbStandard";
+            this.cbStandard.Size = new System.Drawing.Size(150, 21);
+            this.cbStandard.TabIndex = 2;
+            this.cbStandard.SelectedIndexChanged += new System.EventHandler(this.cbStandard_SelectedIndexChanged);
+            //
+            // lbTemplateFile
+            //
+            this.lbTemplateFile.AutoEllipsis = true;
+            this.lbTemplateFile.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.lbTemplateFile.Location = new System.Drawing.Point(162, 22);
+            this.lbTemplateFile.Name = "lbTemplateFile";
+            this.lbTemplateFile.Size = new System.Drawing.Size(185, 16);
+            this.lbTemplateFile.TabIndex = 3;
+            //
             // lvFeatures
             // 
             this.lvFeatures.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
@@ -216,7 +218,6 @@
             this.Name = "Controller";
             this.Text = "Thread Modeler Control";
             this.gbTemplate.ResumeLayout(false);
-            this.gbTemplate.PerformLayout();
             this.gbPitchOffset.ResumeLayout(false);
             this.gbPitchOffset.PerformLayout();
             this.ResumeLayout(false);
@@ -227,9 +228,10 @@
 
         private System.Windows.Forms.Button bOk;
         private System.Windows.Forms.Button bCancel;
-        private System.Windows.Forms.Button bSelect;
         private System.Windows.Forms.GroupBox gbTemplate;
-        private System.Windows.Forms.TextBox tbTemplate;
+        private System.Windows.Forms.ComboBox cbStandard;
+        private System.Windows.Forms.Label lbTemplateFile;
+        private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.ListView lvFeatures;
         private System.Windows.Forms.ColumnHeader hThread;
         private System.Windows.Forms.ColumnHeader hPitch;

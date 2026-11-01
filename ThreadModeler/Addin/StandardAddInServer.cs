@@ -112,6 +112,8 @@ namespace ThreadModeler.Addin
 
             AdnCommand.AddCommand(new ThreadModelerCmd(m_inventorApplication));
 
+            AdnCommand.AddCommand(new ConfigCtrlCmd(m_inventorApplication));
+
             AdnCommand.AddCommand(new AboutCtrlCmd(m_inventorApplication));
 
             AdnCommand.AddCommand(new HelpCtrlCmd(m_inventorApplication));

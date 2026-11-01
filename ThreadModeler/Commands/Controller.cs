@@ -11,10 +11,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using System.Windows.Forms;
 using Inventor;
+using ThreadModeler.Addin;
+using ThreadModeler.Settings;
 using ThreadModeler.Utilities;
 
 namespace ThreadModeler.Commands
@@ -43,7 +43,7 @@ namespace ThreadModeler.Commands
 
         private AdnInteractionManager _InteractionManager;
 
-        private static string _ThreadTemplatePath = string.Empty;
+        private string _ThreadTemplatePath = string.Empty;
         private bool _cleaned;
 
 
@@ -58,11 +58,16 @@ namespace ThreadModeler.Commands
 
             bOk.Enabled = false;
 
-            tbTemplate.Text =
-                (_ThreadTemplatePath == string.Empty ?
-                    FindThreadTemplate() : _ThreadTemplatePath);
+            foreach (ThreadStandard standard in
+                Enum.GetValues(typeof(ThreadStandard)))
+            {
+                cbStandard.Items.Add(new StandardItem(standard));
+            }
 
-            tbExtraPitch.Text = "0.10";
+            // ISO by default, every time the dialog opens.
+            cbStandard.SelectedIndex = 0;
+
+            tbExtraPitch.Text = (0.1).ToString("0.00");
 
             tbExtraPitch.TextChanged +=
                 new EventHandler(this.tbExtraPitch_TextChanged);
@@ -82,9 +87,6 @@ namespace ThreadModeler.Commands
             _InteractionManager = InteractionManager;
 
             //Event Handlers Init
-
-            this.tbTemplate.DoubleClick +=
-                new EventHandler(tbTemplate_DoubleClick);
 
             _InteractionManager.SelectEvents.OnSelect +=
                 new SelectEventsSink_OnSelectEventHandler(
@@ -112,6 +114,19 @@ namespace ThreadModeler.Commands
             Point ModelPosition,
             Point2d ViewPosition,
             Inventor.View View)
+        {
+            try
+            {
+                AddSelectedThreads(JustSelectedEntities);
+            }
+            catch (Exception ex)
+            {
+                AddinLog.Error("Adding the selected thread failed.", ex);
+            }
+        }
+
+        private void AddSelectedThreads(
+            ObjectsEnumerator JustSelectedEntities)
         {
             foreach (System.Object obj in JustSelectedEntities)
             {
@@ -237,33 +252,64 @@ namespace ThreadModeler.Commands
         /////////////////////////////////////////////////////////////
         private void bOk_Click(object sender, EventArgs e)
         {
-            bool silentOp = _Application.SilentOperation;
-
-            _Application.SilentOperation = true;
-
-            PartDocument template = _Application.Documents.Open(
-                _ThreadTemplatePath, false) as PartDocument;
-
-            _Application.SilentOperation = silentOp;
-
-            if (!ValidateTemplateParameters(template))
+            try
             {
-                DialogResult res = MessageBox.Show(
-                    "Missing sketch parameter in template file!",
+                if (!Modelize())
+                    return;
+            }
+            catch (Exception ex)
+            {
+                AddinLog.Error("Modelling failed.", ex);
+
+                MessageBox.Show(
+                    "Modelling failed: " + ex.Message +
+                    System.Environment.NewLine + System.Environment.NewLine +
+                    "Details: " + AddinLog.Path,
+                    "Modelization Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                return;
+            }
+
+            // Problem: closing the template doc here
+            // will empty the undo stack (as designed)...
+
+            if (!_cleaned)
+                CleanUp();
+            _InteractionManager.Terminate();
+        }
+
+        /////////////////////////////////////////////////////////////
+        // Use: Modelizes the selected threads with the template of
+        //      the selected standard. Returns False if the dialog
+        //      should stay open.
+        /////////////////////////////////////////////////////////////
+        private bool Modelize()
+        {
+            AddinLog.Info("Modelling in " +
+                ((Document)_Document).DisplayName + " with " +
+                SelectedStandard + " template " + _ThreadTemplatePath + ".");
+
+            PartDocument template;
+
+            string error = ThreadWorker.OpenTemplate(
+                _ThreadTemplatePath, out template);
+
+            if (error != null)
+            {
+                AddinLog.Warn("Invalid template: " + error);
+
+                MessageBox.Show(
+                    error + System.Environment.NewLine +
+                    System.Environment.NewLine +
+                    "Assign a valid " + SelectedStandard +
+                    " template in ThreadModeler > Configuration.",
                     "Invalid Template",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
 
-                bOk.Enabled = false;
-
-                _ThreadTemplatePath = string.Empty;
-
-                tbTemplate.Text = string.Empty;
-
-                if(template != _Application.ActiveDocument)
-                    template.Close(true);
-
-                return;
+                return false;
             }
 
             List<ThreadFeature> threads = new List<ThreadFeature>();
@@ -273,7 +319,7 @@ namespace ThreadModeler.Commands
             {
                 ThreadFeature thread = selectedObj as ThreadFeature;
 
-                if (thread.Suppressed)
+                if (thread == null || thread.Suppressed)
                     continue;
 
                 threads.Add(thread);
@@ -282,57 +328,33 @@ namespace ThreadModeler.Commands
             PlanarSketch templateSketch =
                 template.ComponentDefinition.Sketches[1];
 
-
-
             if (!ThreadWorker.ModelizeThreads(
                 _Document,
                 templateSketch,
                 threads,
                 _extraPitch))
             {
+                string message =
+                    "Failed to modelize the thread." +
+                    System.Environment.NewLine + System.Environment.NewLine +
+                    ThreadWorker.LastError + System.Environment.NewLine +
+                    System.Environment.NewLine;
+
+                if (ThreadWorker.LastErrorIsCoil)
+                    message += "Try with a bigger Pitch Offset value." +
+                        System.Environment.NewLine;
+
+                message += "Details: " + AddinLog.Path;
+
                 DialogResult res = MessageBox.Show(
-                    "Failed to create CoilFeature... " +
-                    "Try with a bigger Pitch Offset value",
+                    message,
                     "Modelization Error",
                     MessageBoxButtons.OKCancel,
                     MessageBoxIcon.Error);
 
-                switch (res)
-                {
-                    case DialogResult.OK:
-                        //template.Close(true);
-                        return;
-                    default:
-                        break;
-                }
+                // OK: back to the dialog. Cancel: close it.
+                return (res != DialogResult.OK);
             }
-
-            // Problem: closing the template doc here 
-            // will empty the undo stack (as designed)...
-
-            //template.Close(true);
-            if (!_cleaned)
-                CleanUp();
-            _InteractionManager.Terminate();
-        }
-
-        /////////////////////////////////////////////////////////////
-        // Use: Returns True if template document contains required
-        //      parameters to modelize thread.
-        /////////////////////////////////////////////////////////////
-        private bool ValidateTemplateParameters(PartDocument doc)
-        {
-            if(!Toolkit.FindParameter(doc, "Pitch"))
-                return false;
-
-            if (!Toolkit.FindParameter(doc, "ThreadOffset"))
-                return false;
-
-            if (!Toolkit.FindParameter(doc, "MajorRadius"))
-                return false;
-
-            if (!Toolkit.FindParameter(doc, "MinorRadius"))
-                return false;
 
             return true;
         }
@@ -349,93 +371,60 @@ namespace ThreadModeler.Commands
         }
 
         /////////////////////////////////////////////////////////////
-        // Use: Select template handler.
+        // Use: Thread standard selected in the drop-down.
         //
         /////////////////////////////////////////////////////////////
-        private void OnSelectTemplate()
+        private ThreadStandard SelectedStandard
         {
-            string path = GetThreadTemplatePath();
-
-            if (path != string.Empty)
+            get
             {
-                _ThreadTemplatePath = path;
+                StandardItem item = cbStandard.SelectedItem as StandardItem;
 
-                tbTemplate.Text = path;
+                return (item == null ? ThreadStandard.ISO : item.Standard);
             }
+        }
+
+        /////////////////////////////////////////////////////////////
+        // Use: Thread standard changed handler: resolves the
+        //      template configured for it.
+        /////////////////////////////////////////////////////////////
+        private void cbStandard_SelectedIndexChanged(object sender,
+            EventArgs e)
+        {
+            _ThreadTemplatePath = ThreadSettings.Load().ResolveTemplate(
+                SelectedStandard, ThreadSettings.AddinDirectory);
+
+            bool exists = System.IO.File.Exists(_ThreadTemplatePath);
+
+            lbTemplateFile.Text = exists ?
+                System.IO.Path.GetFileName(_ThreadTemplatePath) :
+                "(not found – see Configuration)";
+
+            toolTip.SetToolTip(lbTemplateFile, _ThreadTemplatePath);
+
+            if (!exists)
+                _ThreadTemplatePath = string.Empty;
 
             bOk.Enabled = ValidateOkButton();
-
-        }
-
-        private void bSelect_Click(object sender, EventArgs e)
-        {
-            OnSelectTemplate();
-        }
-
-        void tbTemplate_DoubleClick(object sender, EventArgs e)
-        {
-            OnSelectTemplate();
         }
 
         /////////////////////////////////////////////////////////////
-        // Use: Prompts user to locate thread sketch template, if
-        //      not found automatically.
+        // Drop-down entry for a thread standard.
+        //
         /////////////////////////////////////////////////////////////
-        private string GetThreadTemplatePath()
+        private sealed class StandardItem
         {
-            try
+            public readonly ThreadStandard Standard;
+
+            public StandardItem(ThreadStandard standard)
             {
-                string pathInit =
-                    Assembly.GetExecutingAssembly().Location;
-
-                FileInfo fi = new FileInfo(pathInit);
-
-                Inventor.FileDialog fileDlg = null;
-                _Application.CreateFileDialog(out fileDlg);
-
-                fileDlg.Filter = "Inventor Parts (*.ipt)|*.ipt";
-                fileDlg.FilterIndex = 1;
-                fileDlg.DialogTitle = "Select Thread Template";
-                fileDlg.InitialDirectory =
-                    fi.DirectoryName + "\\Thread Templates";
-                fileDlg.FileName = "BSW Template.ipt";
-                fileDlg.MultiSelectEnabled = false;
-                fileDlg.OptionsEnabled = false;
-                fileDlg.CancelError = true;
-                fileDlg.SuppressResolutionWarnings = true;
-
-                fileDlg.ShowOpen();
-
-                return fileDlg.FileName;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
-
-        /////////////////////////////////////////////////////////////
-        // Use: Tries to locate thread sketch template in addin
-        //      install directory.
-        /////////////////////////////////////////////////////////////
-        private string FindThreadTemplate()
-        {
-            string pathInit =
-                Assembly.GetExecutingAssembly().Location;
-
-            FileInfo fi = new FileInfo(pathInit);
-
-            string path =
-                fi.DirectoryName +
-                "\\Thread Templates\\BSW Template.ipt";
-
-            if (System.IO.File.Exists(path))
-            {
-                _ThreadTemplatePath = path;
-                return path;
+                Standard = standard;
             }
 
-            return string.Empty;
+            public override string ToString()
+            {
+                return ThreadSettings.DisplayName(Standard);
+            }
         }
 
         /////////////////////////////////////////////////////////////

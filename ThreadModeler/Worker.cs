@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using Inventor;
+using ThreadModeler.Addin;
 
 namespace ThreadModeler
 {
@@ -26,7 +27,29 @@ namespace ThreadModeler
 
         private static bool _ConstructionWorkFeature = true;
 
-        public const double ThresholdPitchCm = 0.001778;  
+        public const double ThresholdPitchCm = 0.001778;
+
+        /////////////////////////////////////////////////////////////
+        // Reason of the last failure of ModelizeThreads (null if
+        // none), and whether it was the coil that could not be
+        // computed (then a bigger pitch offset may help).
+        /////////////////////////////////////////////////////////////
+        public static string LastError { get; private set; }
+
+        public static bool LastErrorIsCoil { get; private set; }
+
+        private static bool Fail(string reason, Exception ex = null, bool coil = false)
+        {
+            if (LastError == null)
+            {
+                LastError = reason;
+                LastErrorIsCoil = coil;
+            }
+
+            AddinLog.Error("Modelling: " + reason, ex);
+
+            return false;
+        }
 
         /////////////////////////////////////////////////////////////
         //use: Initialize the Toolkit library
@@ -41,6 +64,62 @@ namespace ThreadModeler
         }
 
         /////////////////////////////////////////////////////////////
+        // Comments of the parameters a thread profile template
+        // sketch must have.
+        /////////////////////////////////////////////////////////////
+        public static readonly string[] TemplateParameters =
+            { "Pitch", "ThreadOffset", "MajorRadius", "MinorRadius" };
+
+        /////////////////////////////////////////////////////////////
+        // Use: Opens a thread profile template invisibly. Returns
+        //      null if it can be used, otherwise the reason.
+        //      The template is left open: closing a document
+        //      empties the undo stack.
+        /////////////////////////////////////////////////////////////
+        public static string OpenTemplate(string path,
+            out PartDocument template)
+        {
+            template = null;
+
+            if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
+                return "Template file not found: " + path;
+
+            bool silentOp = _Application.SilentOperation;
+
+            try
+            {
+                _Application.SilentOperation = true;
+
+                template = _Application.Documents.Open(path, false)
+                    as PartDocument;
+            }
+            catch (Exception ex)
+            {
+                AddinLog.Warn("Cannot open template " + path, ex);
+                return "Cannot open " + path + ": " + ex.Message;
+            }
+            finally
+            {
+                _Application.SilentOperation = silentOp;
+            }
+
+            if (template == null)
+                return path + " is not a part document.";
+
+            if (template.ComponentDefinition.Sketches.Count == 0)
+                return path + " contains no sketch.";
+
+            foreach (string name in TemplateParameters)
+            {
+                if (!Toolkit.FindParameter(template, name))
+                    return path + " has no parameter with comment '" +
+                        name + "'.";
+            }
+
+            return null;
+        }
+
+        /////////////////////////////////////////////////////////////
         // Use: High-level method that modelizes a collection of
         //      ThreadFeatures.
         /////////////////////////////////////////////////////////////
@@ -51,8 +130,14 @@ namespace ThreadModeler
         {
             bool ret = true;
 
+            LastError = null;
+            LastErrorIsCoil = false;
+
             foreach (ThreadFeature thread in threads)
             {
+                AddinLog.Info("Modelling " + thread.Name + " (" +
+                    thread.ThreadInfoType + ", extra pitch " + extraPitch + " %).");
+
                 switch (thread.ThreadInfoType)
                 { 
                     case ThreadTypeEnum.kStandardThread:
@@ -105,23 +190,31 @@ namespace ThreadModeler
                 doc as _Document,
                 "Modelizing Thread " + feature.Name);
 
+            string step = "read thread data";
+
             try
             {
-                double pitch = 
+                double pitch =
                     ThreadWorker.GetThreadPitch(threadInfo);
 
-                Vector threadDirection = 
+                Vector threadDirection =
                     threadInfo.ThreadDirection;
 
-                bool isInteriorFace = 
+                step = "determine interior/exterior face";
+
+                bool isInteriorFace =
                     Toolkit.IsInteriorFace(threadedFace);
 
-                Point basePoint = 
+                Point basePoint =
                     threadInfo.ThreadBasePoints[1] as Point;
+
+                AddinLog.Info("  pitch " + pitch + " cm, length " +
+                    threadDirection.Length + " cm, " +
+                    (isInteriorFace ? "interior" : "exterior") + ".");
 
                 if (isInteriorFace)
                 {
-                    Vector normal = 
+                    Vector normal =
                         Toolkit.GetOrthoVector(
                         threadDirection.AsUnitVector()).AsVector();
 
@@ -132,6 +225,8 @@ namespace ThreadModeler
                     basePoint.TranslateBy(normal);
                 }
 
+                step = "insert profile sketch from template";
+
                 PlanarSketch newSketch = Toolkit.InsertSketch(doc,
                     templateSketch,
                     threadDirection.AsUnitVector(),
@@ -139,14 +234,16 @@ namespace ThreadModeler
                         threadDirection.AsUnitVector()),
                     basePoint);
 
-                Point coilBase = 
+                Point coilBase =
                     threadInfo.ThreadBasePoints[1] as Point;
 
                 bool rightHanded = threadInfo.RightHanded;
 
                 double taper = 0;
 
-                if (!ThreadWorker.InitializeForCoilStandard(doc, 
+                step = "prepare coil body";
+
+                if (!ThreadWorker.InitializeForCoilStandard(doc,
                     threadInfo,
                     threadedFace,
                     newSketch.Name, 
@@ -156,8 +253,12 @@ namespace ThreadModeler
                     return false;
                 }
 
+                step = "create profile from template sketch";
+
                 Profile profile =
                   newSketch.Profiles.AddForSolid(true, null, null);
+
+                step = "create coil";
 
                 if (!ThreadWorker.CreateCoilFeature(doc,
                     profile,
@@ -180,9 +281,18 @@ namespace ThreadModeler
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
-                Tx.Abort();
+                Fail(feature.Name + ": " + step + " failed: " + ex.Message, ex);
+
+                try
+                {
+                    Tx.Abort();
+                }
+                catch (Exception)
+                {
+                }
+
                 return false;
             }
         }
@@ -203,21 +313,31 @@ namespace ThreadModeler
               doc as _Document,
               "Modelizing Thread ");
 
+            string step = "read thread data";
+
             try
             {
-                double pitch = 
+                double pitch =
                     ThreadWorker.GetThreadPitch(threadInfo);
 
-                Vector threadDirection = 
+                Vector threadDirection =
                     threadInfo.ThreadDirection;
 
-                Point coilBase = 
+                Point coilBase =
                     threadInfo.ThreadBasePoints[1] as Point;
 
-                bool isInteriorFace = 
+                step = "determine interior/exterior face";
+
+                bool isInteriorFace =
                     Toolkit.IsInteriorFace(threadedFace);
 
-                Line sideDir = 
+                AddinLog.Info("  pitch " + pitch + " cm, length " +
+                    threadDirection.Length + " cm, " +
+                    (isInteriorFace ? "interior" : "exterior") + ", tapered.");
+
+                step = "insert profile sketch from template";
+
+                Line sideDir =
                     ThreadWorker.GetThreadSideDirection(
                         threadInfo,
                         threadedFace);
@@ -244,7 +364,9 @@ namespace ThreadModeler
                         sideDir.Direction.AsVector())) 
                         * (IsExpanding ? 1.0 : -1.0);
 
-                if (!ThreadWorker.InitializeForCoilTapered(doc, 
+                step = "prepare coil body";
+
+                if (!ThreadWorker.InitializeForCoilTapered(doc,
                     threadInfo, 
                     threadedFace,
                     newSketch.Name, 
@@ -254,10 +376,14 @@ namespace ThreadModeler
                     return false;
                 }
 
-                Profile profile = 
-                    newSketch.Profiles.AddForSolid(true, 
-                        null, 
+                step = "create profile from template sketch";
+
+                Profile profile =
+                    newSketch.Profiles.AddForSolid(true,
+                        null,
                         null);
+
+                step = "create coil";
 
                 if (!ThreadWorker.CreateCoilFeature(doc,
                     profile,
@@ -280,18 +406,40 @@ namespace ThreadModeler
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Fail(feature.Name + ": " + step + " failed: " + ex.Message, ex);
+
                 try
                 {
                     Tx.Abort();
-                    return false;
                 }
-                catch
+                catch (Exception)
                 {
-                    return false;
                 }
+
+                return false;
             }
+        }
+
+        /////////////////////////////////////////////////////////////
+        // Use: Finds a parameter copied from the template sketch
+        //      (see Toolkit.FindAndUpdateParameter), logs if missing.
+        /////////////////////////////////////////////////////////////
+        private static Parameter FindTemplateParameter(
+            PartDocument doc,
+            string comment,
+            string sketchName)
+        {
+            Parameter parameter =
+                Toolkit.FindAndUpdateParameter(doc, comment, sketchName);
+
+            if (parameter == null)
+                Fail("parameter with comment '" + comment +
+                    "' not found after copying the template sketch " +
+                    "into " + sketchName + ".");
+
+            return parameter;
         }
 
         /////////////////////////////////////////////////////////////
@@ -307,7 +455,7 @@ namespace ThreadModeler
             bool isInteriorFace, double pitchValue)
         {
             Parameter pitch =
-                Toolkit.FindAndUpdateParameter(doc,
+                ThreadWorker.FindTemplateParameter(doc,
                     "Pitch",
                     sketchName);
 
@@ -315,7 +463,7 @@ namespace ThreadModeler
                 return false;
 
             Parameter offset = 
-                Toolkit.FindAndUpdateParameter(doc, 
+                ThreadWorker.FindTemplateParameter(doc, 
                     "ThreadOffset", 
                     sketchName);
 
@@ -323,7 +471,7 @@ namespace ThreadModeler
                 return false;
 
             Parameter major = 
-                Toolkit.FindAndUpdateParameter(doc, 
+                ThreadWorker.FindTemplateParameter(doc, 
                     "MajorRadius", 
                     sketchName);
 
@@ -331,7 +479,7 @@ namespace ThreadModeler
                 return false;
 
             Parameter minor = 
-                Toolkit.FindAndUpdateParameter(doc, 
+                ThreadWorker.FindTemplateParameter(doc, 
                     "MinorRadius", 
                     sketchName);
 
@@ -384,7 +532,7 @@ namespace ThreadModeler
             bool isInteriorFace, double pitchValue)
         {
             Parameter pitch = 
-                Toolkit.FindAndUpdateParameter(doc, 
+                ThreadWorker.FindTemplateParameter(doc, 
                     "Pitch", 
                     sketchName);
 
@@ -392,7 +540,7 @@ namespace ThreadModeler
                 return false;
 
             Parameter offset = 
-                Toolkit.FindAndUpdateParameter(doc, 
+                ThreadWorker.FindTemplateParameter(doc, 
                     "ThreadOffset", 
                     sketchName);
 
@@ -400,7 +548,7 @@ namespace ThreadModeler
                 return false;
 
             Parameter major = 
-                Toolkit.FindAndUpdateParameter(doc, 
+                ThreadWorker.FindTemplateParameter(doc, 
                     "MajorRadius", 
                     sketchName);
 
@@ -408,7 +556,7 @@ namespace ThreadModeler
                 return false;
 
             Parameter minor = 
-                Toolkit.FindAndUpdateParameter(doc, 
+                ThreadWorker.FindTemplateParameter(doc, 
                     "MinorRadius", 
                     sketchName);
 
@@ -600,9 +748,10 @@ namespace ThreadModeler
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return Fail("creating the coil body (revolve) failed: " +
+                    ex.Message, ex);
             }
         }
 
@@ -732,15 +881,22 @@ namespace ThreadModeler
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return Fail("creating the coil body (revolve) failed: " +
+                    ex.Message, ex);
             }
         }
 
         /////////////////////////////////////////////////////////////
         // Use: Creates CoilFeature that represents the modelized
-        //      Thread.
+        //      Thread, and cuts it out of the coil body (the last
+        //      body, created by CreateCoilBody*).
+        //      The coil is created as a new body and subtracted with
+        //      a CombineFeature: a coil created as a cut is computed
+        //      against every body of the part first, and Inventor
+        //      fails on some parts (E_FAIL) when the thread profile
+        //      touches the threaded face of the part's own body.
         /////////////////////////////////////////////////////////////
         private static bool CreateCoilFeature(PartDocument doc,
             Profile profile,
@@ -751,10 +907,15 @@ namespace ThreadModeler
             double pitch,
             double extraPitch)
         {
+            string step = "creating the coil";
+
             try
             {
-                PartComponentDefinition compDef = 
+                PartComponentDefinition compDef =
                     doc.ComponentDefinition;
+
+                SurfaceBody coilBody =
+                    compDef.SurfaceBodies[compDef.SurfaceBodies.Count];
 
                 WorkAxis wa = compDef.WorkAxes.AddFixed(
                     basePoint, 
@@ -770,32 +931,53 @@ namespace ThreadModeler
                         profile,
                         wa,
                         coilPitch,
-                        height, 
-                        PartFeatureOperationEnum.kCutOperation,
+                        height,
+                        PartFeatureOperationEnum.kNewBodyOperation,
                         false,
                         !rightHanded,
-                        taper, 
-                        false, 
-                        0, 
-                        0, 
+                        taper,
                         false,
-                        0, 
+                        0,
+                        0,
+                        false,
+                        0,
                         0);
-                 
-                ObjectCollection bodies = 
+
+                HealthStatusEnum health = coil.HealthStatus;
+
+                if (health != HealthStatusEnum.kUpToDateHealth)
+                    return Fail("coil " + coil.Name + " is " + health +
+                        " (pitch " + coilPitch + " cm, height " +
+                        height + " cm).", null, true);
+
+                step = "cutting the coil out of the thread body";
+
+                ObjectCollection tools =
                  _Application.TransientObjects.
                     CreateObjectCollection(null);
 
-                bodies.Add(
-                 compDef.SurfaceBodies[compDef.SurfaceBodies.Count]);
-                
-                coil.SetAffectedBodies(bodies);
-                 
-                return (coil.HealthStatus == HealthStatusEnum.kUpToDateHealth);
+                tools.Add(coil.SurfaceBodies[1]);
+
+                CombineFeature cut =
+                    compDef.Features.CombineFeatures.Add(
+                        coilBody,
+                        tools,
+                        PartFeatureOperationEnum.kCutOperation,
+                        false);
+
+                health = cut.HealthStatus;
+
+                if (health != HealthStatusEnum.kUpToDateHealth)
+                    return Fail(cut.Name + " (coil cut) is " + health +
+                        " (pitch " + coilPitch + " cm, height " +
+                        height + " cm).", null, true);
+
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return Fail(step + " failed: " + ex.Message,
+                    ex, true);
             }
         }
 

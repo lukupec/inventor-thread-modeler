@@ -132,6 +132,26 @@ def update(size):
     return finish(img, size)
 
 
+def gear_points(cx, cy, r_out, r_in, teeth):
+    """Outline of a gear: each tooth rises at 15 %, is flat to 45 % and falls at 60 % of its pitch angle."""
+    pts = []
+    step = 2 * math.pi / teeth
+    for i in range(teeth):
+        for frac, r in ((0.0, r_in), (0.15, r_out), (0.45, r_out), (0.60, r_in)):
+            a = (i + frac) * step - math.pi / 2
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    return pts
+
+
+def settings(size):
+    img, d, n = circle_badge(size, BLUE, BLUE_DARK)
+    teeth = 8 if size >= 24 else 6
+    d.polygon(gear_points(n / 2, n / 2, 0.37 * n, 0.27 * n, teeth), fill=WHITE)
+    r = max(0.11 * size, 1.5) * SS
+    d.ellipse([n / 2 - r, n / 2 - r, n / 2 + r, n / 2 + r], fill=BLUE)
+    return finish(img, size)
+
+
 def write_ico(path, frames):
     """
     Writes a standard ICO: one 32-bit BGRA DIB per frame (bottom-up) followed by its 1-bit AND mask
@@ -173,6 +193,7 @@ ICONS = {
     "about.ico": (info, [16, 20, 24, 32, 40, 48]),
     "Help.ico": (question, [16, 20, 24, 32, 40, 48]),
     "update.ico": (update, [16, 20, 24, 32, 40, 48]),
+    "settings.ico": (settings, [16, 20, 24, 32, 40, 48]),
 }
 
 

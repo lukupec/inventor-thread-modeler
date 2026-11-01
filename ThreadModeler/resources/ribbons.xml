@@ -34,6 +34,11 @@
                 isInSlideout="false" 
                 targetControl="" 
                 insertBefore="false"/>
+      <Button internalName="ThreadModeler.ConfigCtrlCmd"
+                 useLargeIcon="false"
+                 isInSlideout="true"
+                 targetControl=""
+                 insertBefore="false"/>
       <Button internalName="ThreadModeler.HelpCtrlCmd"
                  useLargeIcon="false"
                  isInSlideout="true"

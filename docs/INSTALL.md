@@ -67,12 +67,22 @@ The update state (last check, skipped version) is kept in `%LOCALAPPDATA%\Thread
 
 1. Open a part (`.ipt`) that contains one or more **Thread** features.
 2. On the **ThreadModeler** ribbon tab, click **ThreadModeler**.
-3. The *Thread Modeler Control* dialog opens. Pick thread features in the model; they appear under
-   *Selected Threads*. Optionally adjust *Pitch Offset* (thread pitch + %), then click **Ok**.
-   The *Thread Sketch Template* field is filled automatically from `Contents\Thread Templates`.
-   Use **...** to choose another template.
+3. The *Thread Modeler Control* dialog opens. Under *Thread Profile*, choose **ISO (metric, 60°)** (the default)
+   or **BSW (Whitworth, 55°)**. The template file used for that profile is shown next to it.
+4. Pick thread features in the model; they appear under *Selected Threads*. Optionally adjust *Pitch Offset*
+   (thread pitch + %), then click **Ok**.
 
-**Help**, **Check for Updates** and **About** are in the panel's slide-out.
+If modelling fails, the message says which step failed. The details are in the [log](#logs).
+
+### Configuration
+
+**Configuration** in the panel's slide-out assigns the thread profile template (`.ipt`) for ISO and for BSW.
+By default the templates in `Contents\Thread Templates` are used; **Reset to defaults** goes back to them.
+A template's first sketch must have parameters with the comments `Pitch`, `ThreadOffset`, `MajorRadius` and
+`MinorRadius`. This is checked when you click **OK**. The settings are stored per user in
+`%LOCALAPPDATA%\ThreadModeler\settings.json`.
+
+**Configuration**, **Help**, **Check for Updates** and **About** are in the panel's slide-out.
 
 ## Uninstall
 
@@ -98,8 +108,8 @@ The add-in writes a short log per user to
 %LOCALAPPDATA%\ThreadModeler\ThreadModeler.log
 ```
 
-It contains how it was loaded (runtime, load context, Inventor interop version), activation, update checks
-and errors. It is also written to the debugger output, which you can view with Sysinternals DebugView.
+It contains how it was loaded (runtime, load context, Inventor interop version), activation, update checks,
+each modelled thread, and errors (with the modelling step that failed). It is also written to the debugger output, which you can view with Sysinternals DebugView.
 
 If the add-in fails while loading, the error is shown in a message box and appended to
 `%TEMP%\ThreadModeler-load-error.txt`. That file includes the Inventor and .NET versions.
@@ -113,4 +123,5 @@ If the add-in fails while loading, the error is shown in a message box and appen
 | Add-in not listed in *Tools → Add-Ins* | `C:\ProgramData\Autodesk\ApplicationPlugins\ThreadModeler.bundle\PackageContents.xml` must exist |
 | Add-in listed twice, or the old name *coolOrange - ThreadModeler* still shows | A manually copied old bundle is still there: delete `C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle` |
 | Update check says it could not connect | The PC needs HTTPS access to `api.github.com`, `github.com` and `objects.githubusercontent.com` (proxy/firewall) |
-| *Thread Sketch Template* field is empty | `Contents\Thread Templates\*.ipt` must sit next to `ThreadModeler.dll`, or pick a template with **...** |
+| *Thread Profile* shows "(not found – see Configuration)" | `Contents\Thread Templates\*.ipt` must sit next to `ThreadModeler.dll`, or assign a template in **Configuration** |
+| Modelling fails | The message names the failed step; the exception is in the [log](#logs). If the coil failed, try a bigger *Pitch Offset* |

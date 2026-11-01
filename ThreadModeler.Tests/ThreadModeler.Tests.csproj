@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="..\ThreadModeler\Update\UpdateLogic.cs" Link="UpdateLogic.cs" />
+    <Compile Include="..\ThreadModeler\Settings\ThreadSettings.cs" Link="ThreadSettings.cs" />
   </ItemGroup>
 
   <ItemGroup>

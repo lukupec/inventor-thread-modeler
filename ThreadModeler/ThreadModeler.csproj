@@ -99,6 +99,7 @@
     <EmbeddedResource Include="resources\about.ico" />
     <EmbeddedResource Include="resources\threadModeler.ico" />
     <EmbeddedResource Include="resources\update.ico" />
+    <EmbeddedResource Include="resources\settings.ico" />
   </ItemGroup>
 
   <ItemGroup>

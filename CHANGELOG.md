@@ -1,5 +1,24 @@
 # Changelog
 
+## 30.1.0 – 2026-11-01
+
+- **Fix: modelling failed with "Failed to create CoilFeature" (E_FAIL) on some parts**, for example an M6 thread in a
+  hole of a multi-body part. The coil was created as a cut feature, so Inventor first computed it against every body
+  of the part, and its kernel failed where the thread profile touches the threaded face. The coil is now created as a
+  separate body and cut out of the thread body only, with a Combine feature. The resulting threads are the same.
+- **Thread profile drop-down.** The *Thread Modeler Control* dialog has a *Thread Profile* drop-down with
+  **ISO (metric, 60°)**, the default, and **BSW (Whitworth, 55°)**. It replaces the template path field and its
+  file browser. Before, the BSW template was the default, so ISO threads were modelled with a Whitworth profile.
+- **Configuration** command in the panel's slide-out: assigns the ISO and BSW templates. Templates are checked for
+  the required sketch parameters. The settings are stored in `%LOCALAPPDATA%\ThreadModeler\settings.json`.
+- **Modelling errors are reported.** A failed modelling now names the step that failed (for example creating the coil
+  or a missing template parameter) and writes the exception to the log. Before, every failure showed
+  "Failed to create CoilFeature… Try with a bigger Pitch Offset value", and nothing was logged. The pitch-offset
+  hint now appears only when the coil itself fails.
+- The default pitch offset is shown with the system's decimal separator, so editing it works in locales that use a
+  decimal comma.
+- New gear icon for *Configuration* (`tools/make_icons.py`).
+
 ## 30.0.5 – 2026-11-01
 
 - The *Thread Modeler Control* dialog still showed the old orange coolOrange icon, which was embedded in its form
