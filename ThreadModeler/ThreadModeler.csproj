@@ -16,8 +16,19 @@
     <Platforms>x64</Platforms>
     <!-- Required for assemblies that are loaded as plug-ins into another .NET host (Inventor). -->
     <EnableDynamicLoading>true</EnableDynamicLoading>
-    <!-- Assembly attributes come from ..\ProductInfo.cs and Properties\AssemblyInfo.cs. -->
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!--
+      Version attributes are generated from $(Version) (Directory.Build.props, overridden by CI from the git tag).
+      Company/product/copyright/title come from ..\ProductInfo.cs and Properties\AssemblyInfo.cs.
+    -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateTargetFrameworkAttribute>true</GenerateTargetFrameworkAttribute>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <!-- Lets the project be compiled on non-Windows build machines (CI / Linux). -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <!-- Icons/bitmaps in .resx files are stored pre-serialized (no BinaryFormatter, which is gone in .NET 9+). -->
@@ -28,7 +39,9 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <OutputPath>..\bin\$(Configuration)\Contents\</OutputPath>
+    <!-- bin\<Config>\ is the complete ApplicationPlugins bundle: PackageContents.xml + Contents\ -->
+    <BundleRoot>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\</BundleRoot>
+    <OutputPath>$(BundleRoot)Contents\</OutputPath>
     <!-- Legacy code base: keep the build output readable. -->
     <NoWarn>$(NoWarn);CA1416;SYSLIB0003;CS0618;CS0168;CS0169;CS0414;CS0649;CS8981</NoWarn>
   </PropertyGroup>
@@ -45,26 +58,32 @@
   </PropertyGroup>
 
   <!--
-    Inventor interop assembly. Interop types are embedded, so the add-in does not depend on a specific
-    Inventor interop version. The installed Inventor 2027/2026 interop is used when available, otherwise
-    the copy in ..\References (enough for compiling: the add-in uses no API newer than that).
-    Override with:  dotnet build -p:InventorInteropPath="C:\path\Autodesk.Inventor.Interop.dll"
+    Inventor interop assembly: a normal (non-embedded) reference, as for every Inventor 2025+ .NET add-in.
+    It is NOT copied to the output - at runtime the add-in binds to the interop Inventor has already loaded
+    (a higher version satisfies the reference). Inventor creates the add-in and casts it to its own
+    Inventor.ApplicationAddInServer type; with embedded interop types that cast depends on NoPIA type
+    equivalence and can fail silently ("Automatic / Unloaded").
+    The reference version is the MINIMUM interop version required at runtime, so the default is the old
+    interop in ..\References (v16): it is satisfied by Inventor 2026 (v30) and 2027 (v31) alike, and the
+    add-in uses no newer API. Compiling against an installed Inventor 2027 interop (v31) would make the
+    add-in fail to load in Inventor 2026.
+    Override only if newer API is needed (then the add-in requires that Inventor version or later):
+      dotnet build -p:InventorInteropPath="C:\Program Files\Autodesk\Inventor 2026\Bin\Public Assemblies\Autodesk.Inventor.Interop.dll"
   -->
   <PropertyGroup>
-    <InventorInteropPath Condition="'$(InventorInteropPath)' == '' And Exists('$(ProgramW6432)\Autodesk\Inventor 2027\Bin\Public Assemblies\Autodesk.Inventor.Interop.dll')">$(ProgramW6432)\Autodesk\Inventor 2027\Bin\Public Assemblies\Autodesk.Inventor.Interop.dll</InventorInteropPath>
-    <InventorInteropPath Condition="'$(InventorInteropPath)' == '' And Exists('$(ProgramW6432)\Autodesk\Inventor 2026\Bin\Public Assemblies\Autodesk.Inventor.Interop.dll')">$(ProgramW6432)\Autodesk\Inventor 2026\Bin\Public Assemblies\Autodesk.Inventor.Interop.dll</InventorInteropPath>
     <InventorInteropPath Condition="'$(InventorInteropPath)' == ''">..\References\Autodesk.Inventor.Interop.dll</InventorInteropPath>
   </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="Autodesk.Inventor.Interop">
       <HintPath>$(InventorInteropPath)</HintPath>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
       <Private>false</Private>
     </Reference>
+    <!-- stdole: referenced like the Inventor interop (which depends on it); Inventor's Bin ships stdole.dll. -->
     <Reference Include="stdole">
       <HintPath>..\References\stdole.dll</HintPath>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
@@ -89,10 +108,19 @@
     <Content Include="Thread Templates\*.ipt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="coolOrange.ThreadModeler.Inventor.addin" CopyToOutputDirectory="PreserveNewest" />
     <None Include="ThreadModeler.dll.log4net" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Template: @VERSION@ is replaced and the result written to the bundle root (see target below). -->
     <None Include="PackageContents.xml" />
     <None Include="ReadMe.txt" />
     <!-- Stray copy of the template that was never shipped. -->
     <None Remove="resources\BSW Template.ipt" />
   </ItemGroup>
+
+  <!-- Writes PackageContents.xml (with the build version) next to Contents\ so bin\<Config>\ is a ready bundle. -->
+  <Target Name="WritePackageContents" AfterTargets="Build">
+    <PropertyGroup>
+      <_PackageContentsText>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)PackageContents.xml').Replace('@VERSION@', '$(Version)'))</_PackageContentsText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(BundleRoot)PackageContents.xml" Lines="$([MSBuild]::Escape('$(_PackageContentsText)'))" Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="utf-8" />
+  </Target>
 
 </Project>

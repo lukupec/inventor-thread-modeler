@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    Single source of the product version (assembly, PackageContents.xml, MSI).
+    Release builds override it from the git tag:  build.ps1 -Version 30.0.2  /  dotnet build -p:Version=30.0.2
+    Major version = Inventor internal version of the first supported release (30 = Inventor 2026).
+  -->
+  <PropertyGroup>
+    <Version Condition="'$(Version)' == ''">30.0.1</Version>
+  </PropertyGroup>
+</Project>

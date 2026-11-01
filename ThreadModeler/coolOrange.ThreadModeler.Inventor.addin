@@ -19,8 +19,10 @@
   <UserInterfaceVersion>1</UserInterfaceVersion>
   <LoadBehavior>0</LoadBehavior>
   <!--
-    Inventor 2027+: 0 = load into a dedicated AssemblyLoadContext, so the log4net shipped with this
-    add-in cannot conflict with other add-ins. Earlier releases ignore this element.
+    Inventor 2027+: 1 = load into Inventor's shared assembly context, so the add-in binds to the same
+    Autodesk.Inventor.Interop as Inventor itself. (0 = isolated context; it would load a second copy of
+    the interop, and Inventor could not cast the add-in to its ApplicationAddInServer type.)
+    Earlier releases ignore this element.
   -->
-  <UseInventorAssemblyContext>0</UseInventorAssemblyContext>
+  <UseInventorAssemblyContext>1</UseInventorAssemblyContext>
 </Addin>

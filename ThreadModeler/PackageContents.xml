@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ApplicationPackage SchemaVersion="1.0" AutodeskProduct="Inventor" ProductType="Application" Name="coolOrange threadModeler" AppVersion="30.0.0" FriendlyVersion="30.0.0" Description="Thread Modeler automates the generation of modeled threads based on Autodesk Inventor's thread feature." Author="coolOrange s.r.l" AppNameSpace="appstore.exchange.autodesk.com" OnlineDocumentation="www.coolorange.com" ProductCode="{08F2EA69-9156-4891-9F54-8BD16719819B}" UpgradeCode="{87CF466A-9CB2-464D-B971-1B6EB514A727}" SupportedLocales="Enu">
+<ApplicationPackage SchemaVersion="1.0" AutodeskProduct="Inventor" ProductType="Application" Name="coolOrange threadModeler" AppVersion="@VERSION@" FriendlyVersion="@VERSION@" Description="Thread Modeler automates the generation of modeled threads based on Autodesk Inventor's thread feature." Author="coolOrange s.r.l" AppNameSpace="appstore.exchange.autodesk.com" OnlineDocumentation="www.coolorange.com" ProductCode="{08F2EA69-9156-4891-9F54-8BD16719819B}" UpgradeCode="{87CF466A-9CB2-464D-B971-1B6EB514A727}" SupportedLocales="Enu">
   <CompanyDetails Name="coolOrange s.r.l" Url="www.coolorange.com" Email="support@coolorange.com" />
   <Components Description="Inventor 2026 (2026.4+) and Inventor 2027 - .NET 10">
     <RuntimeRequirements OS="Win64" Platform="Inventor" SeriesMin="R2026" SeriesMax="R2027" />
-    <ComponentEntry AppName="coolOrangethreadModeler" Version="30.0.0" ModuleName="./Contents/coolOrange.ThreadModeler.Inventor.addin" AppDescription="Thread Modeler automates the generation of modeled threads based on Autodesk Inventor's thread feature." />
+    <ComponentEntry AppName="coolOrangethreadModeler" Version="@VERSION@" ModuleName="./Contents/coolOrange.ThreadModeler.Inventor.addin" AppDescription="Thread Modeler automates the generation of modeled threads based on Autodesk Inventor's thread feature." />
   </Components>
 </ApplicationPackage>

@@ -887,7 +887,7 @@ namespace ThreadModeler
                 threadInfo.ThreadBasePoints[1] as Point;
 
             Line l1 = Toolkit.GetFaceSideDirection(
-                threadedFace.Geometry, xAxis);
+                threadedFace, xAxis);
 
             Line l2 = _Tg.CreateLine(basePoint, xAxis.AsVector());
 
