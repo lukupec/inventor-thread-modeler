@@ -1,12 +1,19 @@
 name: release
 
-# Publishing a release: bump <Version> in Directory.Build.props, commit, then
-#   git tag v30.0.2 && git push origin v30.0.2
+# Publishing a release (bump <Version> in Directory.Build.props and commit first), either:
+#   - push a tag:         git tag v30.0.2 && git push origin v30.0.2
+#   - or run it manually: Actions -> release -> Run workflow -> version 30.0.2
+#     (creates the tag v30.0.2 on the selected branch's commit)
 # The add-in's update check looks at the latest (non-prerelease) release and its .msi / .msi.sha256 assets.
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, e.g. 30.0.2 (tag v<version> is created)'
+        required: true
 
 permissions:
   contents: write
@@ -25,7 +32,7 @@ jobs:
         id: ver
         shell: pwsh
         run: |
-          $tag = '${{ github.ref_name }}'
+          $tag = if ('${{ github.event_name }}' -eq 'workflow_dispatch') { 'v${{ inputs.version }}' } else { '${{ github.ref_name }}' }
           if ($tag -notmatch '^v(\d+\.\d+\.\d+)$') { throw "Tag '$tag' must look like v30.0.2" }
           $version = $Matches[1]
           $props = [xml](Get-Content Directory.Build.props)
@@ -34,6 +41,7 @@ jobs:
             Write-Warning "Directory.Build.props says $declared but the tag is $tag - building $version from the tag."
           }
           "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
 
       - name: Build, test, package
         shell: pwsh
@@ -45,7 +53,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $v = '${{ steps.ver.outputs.version }}'
-          gh release create '${{ github.ref_name }}' `
+          gh release create '${{ steps.ver.outputs.tag }}' `
+            --target '${{ github.sha }}' `
             "dist/ThreadModeler-$v.msi" `
             "dist/ThreadModeler-$v.msi.sha256" `
             "dist/cODTthreadModeler.bundle.zip" `

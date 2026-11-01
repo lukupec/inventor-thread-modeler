@@ -94,12 +94,14 @@ or use **Check for Updates**.
 ## Releasing a new version
 
 1. Bump `<Version>` in `Directory.Build.props` and add a `CHANGELOG.md` entry. Commit and push to `master`.
-2. Tag and push:
-   ```bash
-   git tag v30.0.2
-   git push origin v30.0.2
-   ```
-3. `.github/workflows/release.yml` builds with the tag's version, runs the tests, and creates the GitHub release with
+2. Start the release, either way:
+   - On GitHub: **Actions → release → Run workflow**, branch `master`, version `30.0.2`. This creates tag `v30.0.2`.
+   - Or push a tag:
+     ```bash
+     git tag v30.0.2
+     git push origin v30.0.2
+     ```
+3. `.github/workflows/release.yml` builds that version, runs the tests, and creates the GitHub release with
    `ThreadModeler-30.0.2.msi`, `ThreadModeler-30.0.2.msi.sha256` and `cODTthreadModeler.bundle.zip`.
 
 Installed add-ins find the new release at their next daily check. The updater:
