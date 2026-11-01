@@ -210,7 +210,7 @@
             this.Controls.Add(this.bCancel);
             this.Controls.Add(this.bOk);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Icon = global::ThreadModeler.resources.threadModeler1;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Controller";

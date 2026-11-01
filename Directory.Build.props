@@ -5,6 +5,6 @@
     Major version = Inventor internal version of the first supported release (30 = Inventor 2026).
   -->
   <PropertyGroup>
-    <Version Condition="'$(Version)' == ''">30.0.4</Version>
+    <Version Condition="'$(Version)' == ''">30.0.5</Version>
   </PropertyGroup>
 </Project>

@@ -15,6 +15,8 @@ namespace ThreadModeler.Commands
         public AboutForm()
         {
             Text = "About ThreadModeler";
+            try { Icon = global::ThreadModeler.resources.threadModeler1; }
+            catch (Exception) { }
             FormBorderStyle = FormBorderStyle.FixedDialog;
             StartPosition = FormStartPosition.CenterParent;
             MinimizeBox = false;

@@ -23,6 +23,8 @@ namespace ThreadModeler.Update
         public UpdateForm(ReleaseInfo release, Version installed)
         {
             Text = "ThreadModeler update";
+            try { Icon = global::ThreadModeler.resources.threadModeler1; }
+            catch (Exception) { }
             FormBorderStyle = FormBorderStyle.FixedDialog;
             StartPosition = FormStartPosition.CenterParent;
             MinimizeBox = false;

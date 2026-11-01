@@ -1,5 +1,11 @@
 # Changelog
 
+## 30.0.5 – 2026-11-01
+
+- The *Thread Modeler Control* dialog still showed the old orange coolOrange icon, which was embedded in its form
+  resources. It now uses the ThreadModeler bolt icon. The About and update dialogs also show the bolt icon instead
+  of the generic .NET window icon.
+
 ## 30.0.4 – 2026-11-01
 
 - New neutral icons: a threaded bolt for ThreadModeler, and blue info and help badges. *Check for Updates* gets its
