@@ -33,7 +33,6 @@
     <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/lukupec/inventor-thread-modeler" />
     <Property Id="ARPHELPLINK" Value="https://github.com/lukupec/inventor-thread-modeler/blob/master/docs/INSTALL.md" />
-    <Property Id="ARPNOMODIFY" Value="1" />
 
     <Property Id="DISABLEUPDATECHECK" Secure="yes" />
 
