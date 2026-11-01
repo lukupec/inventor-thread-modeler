@@ -1,5 +1,11 @@
 # Changelog
 
+## 30.1.1 – 2026-11-01
+
+- **The modelled thread is joined to its part body.** Before, the thread stayed a separate solid body (for example
+  *Solid14* next to *Solid13*), as in the original add-in. It is now added to the body that owns the threaded face
+  with a Combine (Join) feature, so the part keeps its number of bodies.
+
 ## 30.1.0 – 2026-11-01
 
 - **Fix: modelling failed with "Failed to create CoilFeature" (E_FAIL) on some parts**, for example an M6 thread in a

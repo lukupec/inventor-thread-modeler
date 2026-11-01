@@ -194,6 +194,9 @@ namespace ThreadModeler
 
             try
             {
+                // Body the modeled thread is joined to at the end.
+                SurfaceBody threadedBody = threadedFace.SurfaceBody;
+
                 double pitch =
                     ThreadWorker.GetThreadPitch(threadInfo);
 
@@ -261,6 +264,7 @@ namespace ThreadModeler
                 step = "create coil";
 
                 if (!ThreadWorker.CreateCoilFeature(doc,
+                    threadedBody,
                     profile,
                     threadDirection,
                     coilBase,
@@ -317,6 +321,9 @@ namespace ThreadModeler
 
             try
             {
+                // Body the modeled thread is joined to at the end.
+                SurfaceBody threadedBody = threadedFace.SurfaceBody;
+
                 double pitch =
                     ThreadWorker.GetThreadPitch(threadInfo);
 
@@ -386,6 +393,7 @@ namespace ThreadModeler
                 step = "create coil";
 
                 if (!ThreadWorker.CreateCoilFeature(doc,
+                    threadedBody,
                     profile,
                     threadDirection,
                     coilBase,
@@ -897,8 +905,11 @@ namespace ThreadModeler
         //      against every body of the part first, and Inventor
         //      fails on some parts (E_FAIL) when the thread profile
         //      touches the threaded face of the part's own body.
+        //      The threaded coil body is then joined to
+        //      threadedBody, the body that owns the threaded face.
         /////////////////////////////////////////////////////////////
         private static bool CreateCoilFeature(PartDocument doc,
+            SurfaceBody threadedBody,
             Profile profile,
             Vector threadDirection,
             Point basePoint,
@@ -972,12 +983,33 @@ namespace ThreadModeler
                         " (pitch " + coilPitch + " cm, height " +
                         height + " cm).", null, true);
 
+                step = "joining the thread to " + threadedBody.Name;
+
+                tools = _Application.TransientObjects.
+                    CreateObjectCollection(null);
+
+                tools.Add(cut.SurfaceBodies[1]);
+
+                CombineFeature join =
+                    compDef.Features.CombineFeatures.Add(
+                        threadedBody,
+                        tools,
+                        PartFeatureOperationEnum.kJoinOperation,
+                        false);
+
+                health = join.HealthStatus;
+
+                if (health != HealthStatusEnum.kUpToDateHealth)
+                    return Fail(join.Name + " (join thread to " +
+                        threadedBody.Name + ") is " + health + ".");
+
                 return true;
             }
             catch (Exception ex)
             {
                 return Fail(step + " failed: " + ex.Message,
-                    ex, true);
+                    ex, step == "creating the coil" ||
+                        step.StartsWith("cutting"));
             }
         }
 
