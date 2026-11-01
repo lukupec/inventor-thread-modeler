@@ -4,62 +4,112 @@
 
 - Windows x64
 - Autodesk Inventor **2027**, or Inventor **2026 with Update 2026.4 or later**
-  (earlier 2026 builds run add-ins on .NET 8 and cannot load this .NET 10 add-in)
 
-No separate .NET installation is needed – the add-in runs on the .NET 10 runtime that ships with Inventor.
+  Inventor 2026.0 – 2026.3 runs add-ins on .NET 8 and **cannot** load this .NET 10 add-in. It then just
+  shows *Automatic / Unloaded* in the Add-In Manager. Check *Help → About Autodesk Inventor* and install
+  the latest Inventor 2026 update.
 
-## Install
+No separate .NET installation is needed. The add-in runs on the .NET 10 runtime that Inventor uses.
 
-1. Close Inventor.
-2. If an older ThreadModeler was installed with the MSI installer, uninstall it via
-   *Settings → Apps* ("coolOrange Inventor ThreadModeler").
-3. Unzip `cODTthreadModeler.bundle.zip` (or take `dist\cODTthreadModeler.bundle` from the build).
-4. Copy the `cODTthreadModeler.bundle` folder to
+## Install (recommended: MSI)
 
-   ```
-   %ProgramData%\Autodesk\ApplicationPlugins\
-   ```
+1. Download `ThreadModeler-<version>.msi` from the
+   [latest release](https://github.com/lukupec/inventor-thread-modeler/releases/latest).
+2. Double-click it, accept the license, and confirm the Windows administrator prompt.
+   If Inventor is running, the installer asks you to close it.
+3. Start Inventor and open a part. The commands are on the **coolOrange** ribbon tab, in the **threadModeler** panel.
 
-   (typically `C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle`). Administrator rights are required.
-5. If the zip was downloaded from the internet, unblock the files first
-   (`Get-ChildItem -Recurse | Unblock-File` in PowerShell inside the bundle folder), otherwise Windows may refuse to load the DLL.
-6. Start Inventor.
+The MSI installs the add-in for all users to
+
+```
+C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle
+```
+
+It also replaces older ThreadModeler installations made with the original coolOrange MSI.
+
+> The MSI is not code-signed. If Microsoft Defender SmartScreen shows *Windows protected your PC*,
+> click **More info → Run anyway**.
+
+### Silent / IT deployment (Intune, GPO, SCCM)
+
+```powershell
+msiexec /i ThreadModeler-30.0.1.msi /qn
+msiexec /i ThreadModeler-30.0.1.msi /qn DISABLEUPDATECHECK=1   # IT manages updates; users are not prompted
+```
+
+Uninstall silently with `msiexec /x ThreadModeler-30.0.1.msi /qn`, or by product name through your deployment tool.
+
+## Updates
+
+The add-in checks for new versions by itself:
+
+- About 20 seconds after Inventor starts, at most **once a day**, it asks GitHub for the latest release
+  of this repository. It sends no personal data. The request is a plain HTTPS GET to `api.github.com`.
+- If a newer version exists, a dialog offers:
+  - **Download and install**: downloads the new MSI and verifies its SHA-256 checksum. The update is
+    **installed after you close Inventor**, with a progress window and the administrator prompt.
+    Inventor is never closed for you.
+  - **Remind me later**: asks again at the next daily check.
+  - **Skip this version**: is not offered again. A later version is.
+- **Check for Updates** in the threadModeler panel's slide-out checks immediately.
+
+Turn the automatic check off:
+
+| Scope | How |
+|---|---|
+| All users | Install with `DISABLEUPDATECHECK=1`, or set `HKLM\SOFTWARE\coolOrange\ThreadModeler` → `DisableUpdateCheck` (DWORD) = `1` |
+| Current user | Set `HKCU\SOFTWARE\coolOrange\ThreadModeler` → `DisableUpdateCheck` (DWORD) = `1` |
+
+The update state (last check, skipped version) is kept in `%LOCALAPPDATA%\coolOrange\ThreadModeler\update.json`.
 
 ## Use
 
 1. Open a part (`.ipt`) that contains one or more **Thread** features.
-2. Go to the **coolOrange** ribbon tab → **threadModeler** panel → **threadModeler**.
-3. The *Thread Modeler Control* dialog opens. Pick thread features in the model; they are listed under
+2. On the **coolOrange** ribbon tab, in the **threadModeler** panel, click **threadModeler**.
+3. The *Thread Modeler Control* dialog opens. Pick thread features in the model; they appear under
    *Selected Threads*. Optionally adjust *Pitch Offset* (thread pitch + %), then click **Ok**.
-   The *Thread Sketch Template* field is filled automatically from `Contents\Thread Templates`;
-   use **...** to choose another template.
+   The *Thread Sketch Template* field is filled automatically from `Contents\Thread Templates`.
+   Use **...** to choose another template.
 
-**Help** and **About** are in the panel's slide-out.
+**Help**, **Check for Updates** and **About** are in the panel's slide-out.
 
 ## Uninstall
 
-Close Inventor and delete `%ProgramData%\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle`.
+*Settings → Apps → Installed apps → coolOrange ThreadModeler for Autodesk Inventor → Uninstall.*
 
-To keep it installed but not loaded, use *Tools → Add-Ins* in Inventor and clear **Loaded** / **Load Automatically**
+To keep it installed but not loaded, use *Tools → Add-Ins* in Inventor. Clear **Loaded** / **Load Automatically**
 for *coolOrange - ThreadModeler*.
+
+## Manual install (without the MSI)
+
+1. Close Inventor.
+2. From the release, download `cODTthreadModeler.bundle.zip` and unzip it. You get the folder `cODTthreadModeler.bundle`.
+3. Copy that folder to `C:\ProgramData\Autodesk\ApplicationPlugins\` (administrator rights needed).
+4. Unblock the files: in PowerShell inside the bundle folder, run `Get-ChildItem -Recurse | Unblock-File`.
+
+Uninstall by deleting the folder. The automatic update check also works for manual installs, but it installs the MSI.
 
 ## Logs
 
 Errors are written with log4net to
 
 ```
-%ProgramData%\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle\Contents\Log\threadModeler.log
+C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle\Contents\Log\threadModeler.log
 ```
 
-and to the debugger output (viewable with Sysinternals DebugView). The log level is set in
-`Contents\ThreadModeler.dll.log4net` (`ERROR` by default; use `DEBUG` for more detail).
+They also go to the debugger output, which you can view with Sysinternals DebugView. The log level is set in
+`Contents\ThreadModeler.dll.log4net`: `ERROR` by default, `DEBUG` for more detail.
+
+If the add-in fails while loading, the error is shown in a message box and appended to
+`%TEMP%\ThreadModeler-load-error.txt`. That file includes the Inventor and .NET versions.
 
 ## Troubleshooting
 
 | Symptom | Check |
 |---|---|
-| Add-in not listed in *Tools → Add-Ins* | Bundle folder location; `PackageContents.xml` must be directly inside `cODTthreadModeler.bundle`; Inventor version is 2026 (30) or later |
-| Listed, but fails to load in Inventor 2026 | Inventor must be on **Update 2026.4+** (.NET 10). *Help → About* shows the build. |
-| Fails to load after downloading the zip | Unblock the files (see Install step 5) |
-| No log file is written | Standard users may lack write access to `ProgramData`; run DebugView, or grant write access to `Contents\Log` |
+| *Automatic / Unloaded* in the Add-In Manager, no message | Inventor 2026 below **Update 2026.4**: update Inventor. To see the runtime Inventor uses, run this while Inventor is open: `(Get-Process Inventor).Modules \| ? ModuleName -eq coreclr.dll \| select FileName`. The path must contain `Microsoft.NETCore.App\10.` |
+| Message "ThreadModeler failed to load" | Send `%TEMP%\ThreadModeler-load-error.txt` along with the issue |
+| Add-in not listed in *Tools → Add-Ins* | `C:\ProgramData\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle\PackageContents.xml` must exist |
+| Update check says it could not connect | The PC needs HTTPS access to `api.github.com`, `github.com` and `objects.githubusercontent.com` (proxy/firewall) |
+| No log file is written | Standard users may not be able to write to `ProgramData`. Use DebugView, or grant write access to `Contents\Log` |
 | *Thread Sketch Template* field is empty | `Contents\Thread Templates\*.ipt` must sit next to `ThreadModeler.dll`, or pick a template with **...** |

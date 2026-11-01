@@ -30,20 +30,31 @@ Please watch this short [video](https://coolorange.wistia.com/medias/9hf3s50g6m)
 | 2026.0 – 2026.3 | .NET 8 | ❌ (update Inventor to 2026.4+) |
 | 2025 and older | .NET 8 / .NET Framework | ❌ (use the upstream project) |
 
-## Quick start
+## Install
 
-1. Build the bundle (Windows, .NET 10 SDK):
-   ```powershell
-   .\build.ps1
-   ```
-2. Copy `dist\cODTthreadModeler.bundle` to `%ProgramData%\Autodesk\ApplicationPlugins\`
-   (or run `.\build.ps1 -Install` from an elevated prompt).
-3. Start Inventor, open a part. The command is on the **coolOrange** ribbon tab → **threadModeler** panel.
+1. Download **`ThreadModeler-<version>.msi`** from the
+   [latest release](https://github.com/lukupec/inventor-thread-modeler/releases/latest).
+2. Double-click it and confirm the administrator prompt.
+3. Start Inventor and open a part. The command is on the **coolOrange** ribbon tab, in the **threadModeler** panel.
+
+New versions are offered automatically from inside Inventor (at most once a day), and installed after you close Inventor.
+See [docs/INSTALL.md](docs/INSTALL.md) for silent/IT installs, turning the update check off, and troubleshooting.
+
+## Build
+
+```powershell
+.\build.ps1        # Windows: add-in + tests + MSI in dist\
+```
+```bash
+./build.sh         # any OS: add-in + tests + bundle (no MSI)
+```
+
+Releases are made by pushing a tag `vX.Y.Z`. See [docs/BUILDING.md](docs/BUILDING.md).
 
 ## Documentation
 
-- [docs/BUILDING.md](docs/BUILDING.md) – requirements, building in Visual Studio / CLI, debugging
-- [docs/INSTALL.md](docs/INSTALL.md) – installing, uninstalling, usage, logs, troubleshooting
+- [docs/BUILDING.md](docs/BUILDING.md) – requirements, building, debugging, installer, releasing
+- [docs/INSTALL.md](docs/INSTALL.md) – installing (MSI, silent, manual), updates, usage, logs, troubleshooting
 - [docs/MIGRATION.md](docs/MIGRATION.md) – what changed compared to the original .NET Framework 4.0 add-in and why
 - [CHANGELOG.md](CHANGELOG.md)
 
@@ -51,19 +62,24 @@ Please watch this short [video](https://coolorange.wistia.com/medias/9hf3s50g6m)
 
 ```
 ThreadModeler.sln
-ProductInfo.cs                      shared assembly version / company info
-build.ps1, build.sh                 build + package the ApplicationPlugins bundle into dist/
-References/                         fallback Inventor interop + stdole (compile-time only)
+Directory.Build.props               product version (single source)
+ProductInfo.cs                      shared company / copyright info
+build.ps1, build.sh                 build + test + package into dist/
+References/                         Inventor interop + stdole used as compile-time references
 ThreadModeler/
   ThreadModeler.csproj              SDK-style, net10.0-windows
   coolOrange.ThreadModeler.Inventor.addin   Inventor add-in manifest
-  PackageContents.xml               ApplicationPlugins bundle manifest
+  PackageContents.xml               ApplicationPlugins bundle manifest (template, @VERSION@)
   Addin/StandardAddInServer.cs      add-in entry point (ApplicationAddInServer)
   Commands/                         ribbon commands and the ThreadModeler dialog
+  Update/                           update check (GitHub Releases), update dialog
   Worker.cs, Toolkit.cs             thread generation logic
   Utilities/                        ADN helper classes (ribbon, commands, interaction)
   Thread Templates/                 ISO / BSW profile templates (.ipt)
   resources/                        icons, ribbon definition
+ThreadModeler.Tests/                unit tests (update logic)
+Installer/                          WiX 5 MSI (per-machine)
+.github/workflows/                  build.yml (CI), release.yml (tag -> GitHub release)
 docs/                               documentation
 ```
 

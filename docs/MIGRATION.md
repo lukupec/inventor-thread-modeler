@@ -44,15 +44,27 @@ Sources (Autodesk Developer Blog):
 - `coolOrange.ThreadModeler.Inventor.addin` converted from UTF-16 to UTF-8;
   `SupportedSoftwareVersionLessThan 24..` replaced by `SupportedSoftwareVersionGreaterThan 29..`
   (Inventor 2026 = 30, 2027 = 31). ClassId/ClientId unchanged.
-- `UseInventorAssemblyContext = 0` added: Inventor 2027 loads the add-in into its own
-  `AssemblyLoadContext`, resolving dependencies (log4net) from the add-in folder first, then from
-  Inventor's `Bin`. Earlier versions ignore the element.
+- `UseInventorAssemblyContext = 1`: Inventor 2027 loads the add-in into Inventor's shared
+  assembly load context, so the add-in and Inventor use the same `Autodesk.Inventor.Interop`.
+  (30.0.0 used `0`, an isolated context. That context would load its own copy of the interop, and
+  Inventor could not cast the add-in to its `ApplicationAddInServer` type.) Earlier versions ignore the element.
 
-### Packaging
-- WiX v3 MSI replaced by an Autodesk **ApplicationPlugins bundle** (`cODTthreadModeler.bundle`,
-  same folder name the MSI used) produced by `build.ps1` / `build.sh`.
-- `PackageContents.xml`: version 30.0.0, `OS="Win64"`, `SeriesMin="R2026" SeriesMax="R2027"`,
-  a single component entry for the `.addin`; non-existent PostSharp / Log4PostSharp entries removed.
+### Packaging, installer and updates
+- The add-in is an Autodesk **ApplicationPlugins bundle** (`cODTthreadModeler.bundle`, the same folder
+  name the original MSI used). The build writes it complete to `bin\<Configuration>\`.
+- `PackageContents.xml`: `OS="Win64"`, `SeriesMin="R2026" SeriesMax="R2027"`, a single component entry
+  for the `.addin`. The non-existent PostSharp / Log4PostSharp entries are removed. It is a template;
+  the version is filled in from `Directory.Build.props`.
+- The WiX v3 MSI project is replaced by a **WiX 5 SDK-style MSI** (`Installer\`):
+  - per-machine, one click;
+  - same UpgradeCode as the original, so older installs are upgraded;
+  - `DISABLEUPDATECHECK=1` for IT deployments.
+  WiX 5 is used because WiX 6+ requires accepting the Open Source Maintenance Fee EULA.
+- New **update check** (`ThreadModeler\Update\`):
+  - reads the latest GitHub release once a day and offers the MSI;
+  - verifies the MSI's SHA-256 checksum;
+  - installs it after Inventor exits.
+  Releases are produced by `.github/workflows/release.yml` from `vX.Y.Z` tags.
 
 ### Runtime API changes
 - **BinaryFormatter** is removed in .NET 9+. `.resx` files contain icons/bitmaps
@@ -64,9 +76,20 @@ Sources (Autodesk Developer Blog):
   (`frmSplash.cs`, `HelpCtrlCmd.cs`). On .NET Core+ `UseShellExecute` defaults to `false`
   and starting a URL throws.
 - `stdole.IPictureDisp` icons: `PictureDispConverter` (`OleCreatePictureIndirect`) is unchanged and
-  works on .NET 10 with embedded `stdole` interop types.
-- Inventor interop is referenced with embedded interop types (as before), so no specific
-  `Autodesk.Inventor.Interop` version is required at runtime.
+  works on .NET 10.
+- **Interop types are no longer embedded** (since 30.0.1). `Autodesk.Inventor.Interop` and `stdole` are
+  normal references and are not copied to the output; Inventor provides them. Inventor's managed add-in
+  loader casts the add-in object to its own `Inventor.ApplicationAddInServer` type. With embedded interop
+  types (the .NET Framework-era setting, used in 30.0.0) that cast relies on NoPIA type equivalence, which
+  .NET (Core) does not guarantee. The add-in could then stay *Unloaded* without any message. This
+  matches the setup of Autodesk's Inventor 2025+ add-in templates.
+- The compile-time interop reference is the old v16 interop in `References\`. It is the minimum version
+  required at runtime, which Inventor 2026 (v30) and 2027 (v31) both satisfy.
+- Removing the `dynamic` typing of embedded interop exposed an upstream bug, which is now fixed:
+  `Worker.GetThreadMajorRadiusTapered` passed `Face.Geometry` instead of the `Face` to
+  `Toolkit.GetFaceSideDirection`, which would have thrown for tapered threads.
+- `Activate` failures are written to `%TEMP%\ThreadModeler-load-error.txt` and shown in a message box.
+  Previously Inventor swallowed them silently.
 
 ### Logging
 - `References\log4net.dll` (1.2.x, .NET 2.0) replaced by the `log4net` 3.5.0 NuGet package.
@@ -75,13 +98,16 @@ Sources (Autodesk Developer Blog):
 - Logger initialisation is wrapped in `try/catch` so a logging problem cannot prevent the add-in from loading.
 
 ### Versioning
-- Assembly and bundle version 30.0.0 (major version = Inventor internal version of the first supported release).
+- Single source: `<Version>` in `Directory.Build.props`. The assembly version attributes are generated
+  by the SDK, and the release workflow overrides the version from the git tag.
+- Major version = Inventor internal version of the first supported release (30 = Inventor 2026).
 
 ## Not changed
-- Thread generation logic (`Worker.cs`, `Toolkit.cs`), dialogs, ribbon definition and thread templates.
+- Thread generation logic (`Worker.cs`, `Toolkit.cs`; apart from the tapered-thread fix above), dialogs
+  and thread templates. The ribbon gains a *Check for Updates* button.
 - Add-in ClassId `{90f6009a-a2ed-400f-9cbd-cee55ad30d23}` – Inventor keeps user settings for the add-in.
 
 ## Verification status
-- Builds with the .NET 10 SDK (10.0.403) without warnings; bundle layout verified.
+- Builds with the .NET 10 SDK without warnings, and the unit tests pass. The MSI is built on `windows-latest` in CI.
 - **Runtime testing in Inventor 2026.4+/2027 must be done on Windows** (load in Add-In Manager,
   ribbon panel shows, ISO and BSW threads are modeled, log is written).

@@ -29,13 +29,14 @@ C# project (not required to run the plugin). See docs\BUILDING.md.
 
 Installation
 ------------
-Copy the cODTthreadModeler.bundle folder (from the release zip or
-from dist\ after running build.ps1) to
+Download ThreadModeler-<version>.msi from
+https://github.com/lukupec/inventor-thread-modeler/releases/latest
+and run it. It installs the add-in for all users to
 
-    %ProgramData%\Autodesk\ApplicationPlugins\
+    %ProgramData%\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle
 
-and restart Inventor. No registration (RegAsm) is required.
-See docs\INSTALL.md.
+Newer versions are offered automatically inside Inventor and installed
+after Inventor is closed. See docs\INSTALL.md.
 
 Usage
 -----
@@ -53,8 +54,8 @@ You can unload the plugin without uninstalling it by unchecking the
 Manager. Unchecking "Load Automatically" causes the plugin not to be
 loaded in future sessions of Inventor.
 
-To remove the plugin completely, close Inventor and delete
-%ProgramData%\Autodesk\ApplicationPlugins\cODTthreadModeler.bundle.
+To remove the plugin completely, uninstall "coolOrange ThreadModeler
+for Autodesk Inventor" in Settings > Apps.
 
 Known Issues
 ------------
