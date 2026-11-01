@@ -21,6 +21,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ThreadModeler Inventor Add-in
@@ -30,6 +31,7 @@ using System.Runtime.InteropServices;
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using ThreadModeler.Commands;
+using ThreadModeler.Update;
 using ThreadModeler.Utilities;
 
 namespace ThreadModeler.Addin
@@ -67,6 +69,7 @@ namespace ThreadModeler.Addin
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("ThreadModeler: log4net initialization failed: " + ex);
+                WriteLoadError("log4net initialization failed (the add-in continues without file logging)", ex, null);
             }
         }
 
@@ -74,35 +77,66 @@ namespace ThreadModeler.Addin
 
         public void Activate(Inventor.ApplicationAddInSite addInSiteObject, bool firstTime)
         {
-            log.Debug("Activating ThreadModeler Addin");
             // This method is called by Inventor when it loads the addin.
-            // The AddInSiteObject provides access to the Inventor Application object.
-            // The FirstTime flag indicates if the addin is loaded for the first time.
+            // Inventor does not report exceptions thrown here (the add-in just stays "Unloaded"),
+            // so they are written to %TEMP%\ThreadModeler-load-error.txt and shown to the user.
+            try
+            {
+                log.Debug("Activating ThreadModeler Addin");
 
-            // Initialize AddIn members.
-            m_inventorApplication = addInSiteObject.Application;
+                // Initialize AddIn members.
+                m_inventorApplication = addInSiteObject.Application;
 
-            Type addinType = this.GetType();
+                Type addinType = this.GetType();
 
-            AdnInventorUtilities.Initialize(m_inventorApplication, addinType);
+                AdnInventorUtilities.Initialize(m_inventorApplication, addinType);
 
-            Toolkit.Initialize(m_inventorApplication);
-            ThreadWorker.Initialize(m_inventorApplication);
-            
-            AdnCommand.AddCommand(new ThreadModelerCmd(m_inventorApplication));
+                Toolkit.Initialize(m_inventorApplication);
+                ThreadWorker.Initialize(m_inventorApplication);
 
-            AdnCommand.AddCommand(new AboutCtrlCmd(m_inventorApplication));
+                AdnCommand.AddCommand(new ThreadModelerCmd(m_inventorApplication));
 
-            AdnCommand.AddCommand(new HelpCtrlCmd(m_inventorApplication));
-           
-            // Only after all commands have been added,
-            // load Ribbon UI from customized xml file.
-            // Make sure "InternalName" of above commands is matching 
-            // "internalName" tag described in xml of corresponding command.
-            AdnRibbonBuilder.CreateRibbon(
-                m_inventorApplication,
-               addinType,
-               "ThreadModeler.resources.ribbons.xml");
+                AdnCommand.AddCommand(new AboutCtrlCmd(m_inventorApplication));
+
+                AdnCommand.AddCommand(new HelpCtrlCmd(m_inventorApplication));
+
+                AdnCommand.AddCommand(new CheckUpdatesCmd(m_inventorApplication));
+
+                // Only after all commands have been added,
+                // load Ribbon UI from customized xml file.
+                // Make sure "InternalName" of above commands is matching
+                // "internalName" tag described in xml of corresponding command.
+                AdnRibbonBuilder.CreateRibbon(
+                    m_inventorApplication,
+                    addinType,
+                    "ThreadModeler.resources.ribbons.xml");
+            }
+            catch (Exception ex)
+            {
+                log.Error("ThreadModeler failed to load.", ex);
+                string file = WriteLoadError("ThreadModeler failed to load", ex, addInSiteObject);
+                try
+                {
+                    MessageBox.Show(
+                        "ThreadModeler failed to load:\n\n" + ex.GetBaseException().Message +
+                        (file != null ? "\n\nDetails: " + file : string.Empty),
+                        "ThreadModeler", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                catch (Exception)
+                {
+                }
+                throw;
+            }
+
+            // The update check must never affect loading.
+            try
+            {
+                UpdateChecker.Start(m_inventorApplication);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Update check could not be started.", ex);
+            }
         }
 
         public void Deactivate()
@@ -111,10 +145,11 @@ namespace ThreadModeler.Addin
             // The AddIn will be unloaded either manually by the user or
             // when the Inventor session is terminated
 
-            // TODO: Add ApplicationAddInServer.Deactivate implementation
+            UpdateChecker.Stop();
 
             // Release objects.
-            Marshal.ReleaseComObject(m_inventorApplication);
+            if (m_inventorApplication != null)
+                Marshal.ReleaseComObject(m_inventorApplication);
             m_inventorApplication = null;
         }
 
@@ -138,5 +173,40 @@ namespace ThreadModeler.Addin
             }
         }
         #endregion
+
+        /// <summary>
+        /// Writes load diagnostics to %TEMP%\ThreadModeler-load-error.txt. Returns the file path, or null.
+        /// </summary>
+        private static string WriteLoadError(string title, Exception ex, Inventor.ApplicationAddInSite site)
+        {
+            try
+            {
+                string inventorVersion = "unknown";
+                try
+                {
+                    if (site != null)
+                        inventorVersion = site.Application.SoftwareVersion.DisplayVersion;
+                }
+                catch (Exception)
+                {
+                }
+
+                string file = Path.Combine(Path.GetTempPath(), "ThreadModeler-load-error.txt");
+                string text =
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + title + Environment.NewLine +
+                    "ThreadModeler: " + typeof(StandardAddInServer).Assembly.GetName().Version + Environment.NewLine +
+                    "Inventor:      " + inventorVersion + Environment.NewLine +
+                    ".NET runtime:  " + RuntimeInformation.FrameworkDescription + Environment.NewLine +
+                    "Location:      " + typeof(StandardAddInServer).Assembly.Location + Environment.NewLine +
+                    Environment.NewLine + ex + Environment.NewLine + new string('-', 80) + Environment.NewLine;
+                File.AppendAllText(file, text);
+                return file;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
     }
 }

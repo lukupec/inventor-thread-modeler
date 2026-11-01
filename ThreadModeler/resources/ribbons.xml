@@ -40,6 +40,11 @@
                  targetControl=""
                  insertBefore="false"/>
 
+      <Button internalName="coolOrange.ThreadModeler.CheckUpdatesCmd"
+               useLargeIcon="false"
+               isInSlideout="true"
+               targetControl=""
+               insertBefore="false"/>
       <Button internalName="coolOrange.ThreadModeler.AboutCtrlCmd"
                useLargeIcon="false"
                isInSlideout="true"
