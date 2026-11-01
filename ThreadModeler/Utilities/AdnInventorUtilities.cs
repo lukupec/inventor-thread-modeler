@@ -19,7 +19,6 @@
 using System;
 using System.Reflection;
 using Inventor;
-using Microsoft.Win32;
 
 namespace ThreadModeler.Utilities
 {
@@ -434,128 +433,6 @@ namespace ThreadModeler.Utilities
             catch
             {
                 return "*Error*";
-            }
-        }
-    }
-
-    public enum SupportedSoftwareVersionEnum
-    {
-        kSupportedSoftwareVersionLessThan,
-        kSupportedSoftwareVersionGreaterThan,
-        kSupportedSoftwareVersionEqualTo,
-        kSupportedSoftwareVersionNotEqualTo
-    }
-
-    public class AdnAddInRegistration
-    {
-        private class RegInfo
-        {
-            #region Fields
-
-            private string _addinGuid;
-            private string _description;
-            private string _title;
-
-            #endregion
-
-            public RegInfo(Type t)
-            {
-                _addinGuid = t.GUID.ToString("B");
-                object[] attrs = t.Assembly.GetCustomAttributes(false);
-
-                _title = string.Empty;
-                _description = string.Empty;
-
-                foreach (object attr in attrs)
-                {
-                    AssemblyTitleAttribute titleAttr = attr as AssemblyTitleAttribute;
-
-                    if (null != titleAttr)
-                    {
-                        _title = titleAttr.Title;
-                    }
-                    AssemblyDescriptionAttribute descriptionAttr = attr as AssemblyDescriptionAttribute;
-
-                    if (null != descriptionAttr)
-                    {
-                        _description = descriptionAttr.Description;
-                    }
-                }
-            }
-
-            public string AddInGuid
-            {
-                get { return _addinGuid; }
-            }
-
-            public string Description
-            {
-                get { return _description; }
-            }
-
-            public string Title
-            {
-                get { return _title; }
-            }
-        }
-
-        public static void RegisterAddIn(
-            Type t,
-            SupportedSoftwareVersionEnum supportedSoftwareVersion,
-            string softwareVersion,
-            bool loadOnStartup,
-            string addinVersion)
-        {
-            RegInfo info = new RegInfo(t);
-
-            using (RegistryKey keyClsid = Registry.ClassesRoot.CreateSubKey(@"CLSID\" + info.AddInGuid))
-            {
-                keyClsid.SetValue(null, info.Title);
-                keyClsid.CreateSubKey(@"Implemented Categories\{39AD2B5C-7A29-11D6-8E0A-0010B541CAA8}");
-
-                using (RegistryKey keySettings = keyClsid.CreateSubKey("Settings"))
-                {
-                    keySettings.SetValue("AddInType", "Standard");
-                    keySettings.SetValue("LoadOnStartup", (loadOnStartup ? "1" : "0"));
-
-                    switch (supportedSoftwareVersion)
-                    {
-                        case SupportedSoftwareVersionEnum.kSupportedSoftwareVersionEqualTo:
-                            keySettings.SetValue("SupportedSoftwareVersionEqualTo", softwareVersion);
-                            break;
-                        case SupportedSoftwareVersionEnum.kSupportedSoftwareVersionGreaterThan:
-                            keySettings.SetValue("SupportedSoftwareVersionGreaterThan", softwareVersion);
-                            break;
-                        case SupportedSoftwareVersionEnum.kSupportedSoftwareVersionLessThan:
-                            keySettings.SetValue("SupportedSoftwareVersionLessThan", softwareVersion);
-                            break;
-                        case SupportedSoftwareVersionEnum.kSupportedSoftwareVersionNotEqualTo:
-                            keySettings.SetValue("SupportedSoftwareVersionNotEqualTo", softwareVersion);
-                            break;
-                        default:
-                            keySettings.SetValue("SupportedSoftwareVersionGreaterThan", softwareVersion);
-                            break;
-                    }
-
-                    keySettings.SetValue("Version", addinVersion);
-                }
-
-                using (RegistryKey keyDescription = keyClsid.CreateSubKey("Description"))
-                {
-                    keyDescription.SetValue(null, info.Description);
-                }
-            }
-        }
-
-        public static void UnregisterAddIn(Type t)
-        {
-            RegInfo info = new RegInfo(t);
-
-            using (RegistryKey keyClsid = Registry.ClassesRoot.OpenSubKey(@"CLSID\" + info.AddInGuid, true))
-            {
-                keyClsid.DeleteSubKey(@"Implemented Categories\{39AD2B5C-7A29-11D6-8E0A-0010B541CAA8}");
-                keyClsid.DeleteSubKey("Settings");
-                keyClsid.DeleteSubKey("Description");
             }
         }
     }

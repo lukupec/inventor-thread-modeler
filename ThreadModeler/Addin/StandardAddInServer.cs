@@ -49,11 +49,25 @@ namespace ThreadModeler.Addin
 
         public StandardAddInServer()
         {
-            Assembly thisAssembly = Assembly.GetExecutingAssembly();
-            FileInfo fi = new FileInfo(thisAssembly.Location + ".log4net");
-            log4net.GlobalContext.Properties["LogFileName"] = fi.DirectoryName + "\\Log\\threadModeler";
-            log4net.Config.XmlConfigurator.Configure(fi);
-            log = log4net.LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+            // Logging must never prevent the add-in from loading.
+            try
+            {
+                Assembly thisAssembly = Assembly.GetExecutingAssembly();
+                FileInfo fi = new FileInfo(thisAssembly.Location + ".log4net");
+                log4net.GlobalContext.Properties["LogFileName"] =
+                    Path.Combine(fi.DirectoryName, "Log", "threadModeler");
+
+                // log4net 2.x/3.x configures per logger repository; use the repository
+                // that belongs to this assembly so we don't touch other add-ins' logging.
+                log4net.Config.XmlConfigurator.Configure(
+                    log4net.LogManager.GetRepository(thisAssembly), fi);
+
+                log = log4net.LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("ThreadModeler: log4net initialization failed: " + ex);
+            }
         }
 
         #region ApplicationAddInServer Members

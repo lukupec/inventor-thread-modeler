@@ -68,7 +68,7 @@ namespace ThreadModeler.Commands
 
         protected override void OnExecute(NameValueMap context)
         {
-            System.Diagnostics.Process.Start("http://wiki.coolorange.com/display/threadModeler");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("http://wiki.coolorange.com/display/threadModeler") { UseShellExecute = true });
             Terminate();
         }
 
