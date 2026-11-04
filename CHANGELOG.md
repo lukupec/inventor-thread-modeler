@@ -1,5 +1,19 @@
 # Changelog
 
+## 30.2.0 – 2026-11-01
+
+- **Parametric modelled threads.** Each modelled thread gets user parameters, named after the thread feature:
+  `Thread1_Pitch`, `Thread1_PitchOffset`, `Thread1_Diameter`, `Thread1_Length`, `Thread1_DepthFactor` and
+  `Thread1_Depth` (= DepthFactor × Pitch). The thread profile sketch, the coil body sketch(es) and the coil's pitch
+  and height are driven by them, so editing a parameter updates the modelled thread.
+- `Thread1_Diameter` and `Thread1_Length` follow the hole or shaft: the threaded face's circular edges are projected
+  into a hidden reference sketch and measured with reference dimensions. A partial-length thread uses the thread
+  feature's own length parameter. If neither is possible, fixed values are used.
+- **All generated sketches are fully constrained.** The coil body sketch was an undimensioned rectangle. The ISO
+  template sketch left the length of its two axis lines free; such points are now grounded.
+- The modelled thread keeps its position (the work features are still fixed); only its size follows the model.
+  Tapered threads are not parametric yet.
+
 ## 30.1.1 – 2026-11-01
 
 - **The modelled thread is joined to its part body.** Before, the thread stayed a separate solid body (for example

@@ -215,6 +215,18 @@ namespace ThreadModeler
                     threadDirection.Length + " cm, " +
                     (isInteriorFace ? "interior" : "exterior") + ".");
 
+                step = "create thread parameters";
+
+                ThreadParameters prm = ThreadWorker.CreateThreadParameters(
+                    doc,
+                    feature,
+                    threadedFace,
+                    threadInfo.ThreadBasePoints[1] as Point,
+                    threadDirection,
+                    pitch,
+                    ThreadWorker.GetThreadMajorRadiusStandard(threadedFace),
+                    extraPitch);
+
                 if (isInteriorFace)
                 {
                     Vector normal =
@@ -249,8 +261,8 @@ namespace ThreadModeler
                 if (!ThreadWorker.InitializeForCoilStandard(doc,
                     threadInfo,
                     threadedFace,
-                    newSketch.Name, 
-                    isInteriorFace, pitch))
+                    newSketch,
+                    isInteriorFace, pitch, prm))
                 {
                     Tx.Abort();
                     return false;
@@ -271,7 +283,8 @@ namespace ThreadModeler
                     rightHanded,
                     taper,
                     pitch,
-                    extraPitch))
+                    extraPitch,
+                    prm))
                 {
                     Tx.Abort();
                     return false;
@@ -282,6 +295,10 @@ namespace ThreadModeler
                 feature.Suppressed = true;
 
                 Tx.End();
+
+                AddinLog.Info("  modelled; parameters " + prm.Prefix +
+                    "_* (diameter " + prm.DiameterSource + ", length " +
+                    prm.LengthSource + ").");
 
                 return true;
             }
@@ -400,7 +417,8 @@ namespace ThreadModeler
                     rightHanded,
                     taper,
                     pitch,
-                    extraPitch))
+                    extraPitch,
+                    null))
                 {
                     Tx.Abort();
                     return false;
@@ -451,17 +469,290 @@ namespace ThreadModeler
         }
 
         /////////////////////////////////////////////////////////////
+        // User parameters that drive one modelled thread:
+        //   <Prefix>_Pitch        thread pitch
+        //   <Prefix>_PitchOffset  coil pitch + % (dialog value)
+        //   <Prefix>_Diameter     diameter of the threaded face
+        //   <Prefix>_Length       thread length
+        //   <Prefix>_DepthFactor  thread depth / pitch (template)
+        //   <Prefix>_Depth        = DepthFactor * Pitch
+        // Diameter and Length are linked to the hole/shaft when
+        // possible (see LinkToThreadedFace).
+        /////////////////////////////////////////////////////////////
+        private sealed class ThreadParameters
+        {
+            public string Prefix;
+
+            public string Pitch, PitchOffset, Diameter, Length;
+
+            public string DepthFactor, Depth;
+
+            public double PitchValue;
+
+            public string DiameterSource = "fixed value";
+
+            public string LengthSource = "fixed value";
+
+            public void AddDepth(PartDocument doc,
+                double depth,
+                double pitch)
+            {
+                DepthFactor = Prefix + "_DepthFactor";
+
+                AddUserParameter(doc, DepthFactor, depth / pitch,
+                    UnitsTypeEnum.kUnitlessUnits,
+                    "Thread depth / pitch, from the thread template");
+
+                Depth = Prefix + "_Depth";
+
+                UserParameter p = doc.ComponentDefinition.Parameters.
+                    UserParameters.AddByExpression(Depth,
+                        DepthFactor + " * " + Pitch,
+                        UnitsTypeEnum.kDefaultDisplayLengthUnits);
+
+                p.Comment = "ThreadModeler: thread depth";
+            }
+        }
+
+        /////////////////////////////////////////////////////////////
+        // Use: Creates the user parameters of a modelled thread.
+        //
+        /////////////////////////////////////////////////////////////
+        private static ThreadParameters CreateThreadParameters(
+            PartDocument doc,
+            PartFeature feature,
+            Face threadedFace,
+            Point axisBase,
+            Vector threadDirection,
+            double pitch,
+            double radius,
+            double extraPitch)
+        {
+            ThreadParameters prm = new ThreadParameters();
+
+            prm.Prefix = UniqueParameterPrefix(doc, feature.Name);
+
+            prm.PitchValue = pitch;
+
+            prm.Pitch = prm.Prefix + "_Pitch";
+            AddUserParameter(doc, prm.Pitch, pitch,
+                UnitsTypeEnum.kDefaultDisplayLengthUnits,
+                "Thread pitch");
+
+            prm.PitchOffset = prm.Prefix + "_PitchOffset";
+            AddUserParameter(doc, prm.PitchOffset, extraPitch,
+                UnitsTypeEnum.kUnitlessUnits,
+                "Coil pitch = thread pitch + this %");
+
+            prm.Diameter = prm.Prefix + "_Diameter";
+            AddUserParameter(doc, prm.Diameter, 2 * radius,
+                UnitsTypeEnum.kDefaultDisplayLengthUnits,
+                "Diameter of the threaded face");
+
+            prm.Length = prm.Prefix + "_Length";
+            AddUserParameter(doc, prm.Length, threadDirection.Length,
+                UnitsTypeEnum.kDefaultDisplayLengthUnits,
+                "Thread length");
+
+            LinkToThreadedFace(doc, prm, feature, threadedFace,
+                axisBase, threadDirection, 2 * radius);
+
+            return prm;
+        }
+
+        private static void AddUserParameter(PartDocument doc,
+            string name,
+            double value,
+            UnitsTypeEnum units,
+            string comment)
+        {
+            UserParameter p = doc.ComponentDefinition.Parameters.
+                UserParameters.AddByValue(name, value, units);
+
+            p.Comment = "ThreadModeler: " + comment;
+        }
+
+        /////////////////////////////////////////////////////////////
+        // Use: Parameter name prefix for a thread feature, e.g.
+        //      "Thread3", or "Thread3_2" if that is taken.
+        /////////////////////////////////////////////////////////////
+        private static string UniqueParameterPrefix(PartDocument doc,
+            string featureName)
+        {
+            System.Text.StringBuilder sb =
+                new System.Text.StringBuilder();
+
+            foreach (char c in featureName)
+                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+
+            string baseName = sb.ToString();
+
+            if (baseName.Length == 0 || !char.IsLetter(baseName[0]))
+                baseName = "Thread_" + baseName;
+
+            HashSet<string> names = new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (Parameter p in doc.ComponentDefinition.Parameters)
+                names.Add(p.Name);
+
+            string prefix = baseName;
+
+            for (int i = 2; names.Contains(prefix + "_Pitch"); i++)
+                prefix = baseName + "_" + i;
+
+            return prefix;
+        }
+
+        /////////////////////////////////////////////////////////////
+        // Use: Links <Prefix>_Diameter and <Prefix>_Length to the
+        //      model: the circular edges of the threaded face are
+        //      projected into a reference sketch (a plane through
+        //      the thread axis shows each edge as a line, as long as
+        //      the diameter), and measured with driven dimensions.
+        //      A partial thread's length is linked to the thread
+        //      feature's own length parameter instead.
+        //      Without usable edges the fixed values stay.
+        /////////////////////////////////////////////////////////////
+        private static void LinkToThreadedFace(PartDocument doc,
+            ThreadParameters prm,
+            PartFeature feature,
+            Face threadedFace,
+            Point axisBase,
+            Vector threadDirection,
+            double diameter)
+        {
+            try
+            {
+                PartComponentDefinition compDef =
+                    doc.ComponentDefinition;
+
+                double length = threadDirection.Length;
+
+                UnitVector yAxis = threadDirection.AsUnitVector();
+
+                UnitVector xAxis = Toolkit.GetOrthoVector(yAxis);
+
+                WorkPoint wpt = compDef.WorkPoints.AddFixed(axisBase,
+                    _ConstructionWorkFeature);
+
+                WorkPlane wpl = compDef.WorkPlanes.AddFixed(axisBase,
+                    xAxis, yAxis, _ConstructionWorkFeature);
+
+                WorkAxis xWa = compDef.WorkAxes.AddFixed(axisBase,
+                    xAxis, _ConstructionWorkFeature);
+
+                PlanarSketch sketch =
+                    compDef.Sketches.AddWithOrientation(wpl,
+                        xWa, true, true, wpt, false);
+
+                List<SketchLine> rims = new List<SketchLine>();
+
+                foreach (Edge edge in threadedFace.Edges)
+                {
+                    if (edge.GeometryType != CurveTypeEnum.kCircleCurve)
+                        continue;
+
+                    SketchLine rim =
+                        sketch.AddByProjectingEntity(edge) as SketchLine;
+
+                    if (rim != null)
+                        rims.Add(rim);
+                }
+
+                DimensionConstraints dc = sketch.DimensionConstraints;
+
+                if (rims.Count > 0)
+                {
+                    Point2d s = rims[0].StartSketchPoint.Geometry;
+
+                    TwoPointDistanceDimConstraint dim = dc.AddTwoPointDistance(
+                        rims[0].StartSketchPoint,
+                        rims[0].EndSketchPoint,
+                        DimensionOrientationEnum.kAlignedDim,
+                        _Tg.CreatePoint2d(s.X, s.Y - 0.2 * diameter),
+                        true);
+
+                    if (Math.Abs((double)dim.Parameter.Value - diameter) < 1e-6)
+                    {
+                        doc.ComponentDefinition.Parameters[prm.Diameter].
+                            Expression = dim.Parameter.Name;
+
+                        prm.DiameterSource = "hole edge, " + dim.Parameter.Name;
+                    }
+                    else
+                    {
+                        dim.Delete();
+                    }
+                }
+
+                if (rims.Count == 2)
+                {
+                    Point2d s = rims[1].StartSketchPoint.Geometry;
+
+                    TwoPointDistanceDimConstraint dim = dc.AddTwoPointDistance(
+                        rims[0].StartSketchPoint,
+                        rims[1].StartSketchPoint,
+                        DimensionOrientationEnum.kVerticalDim,
+                        _Tg.CreatePoint2d(s.X + 0.2 * diameter, s.Y),
+                        true);
+
+                    if (Math.Abs((double)dim.Parameter.Value - length) < 1e-6)
+                    {
+                        doc.ComponentDefinition.Parameters[prm.Length].
+                            Expression = dim.Parameter.Name;
+
+                        prm.LengthSource = "face length, " + dim.Parameter.Name;
+                    }
+                    else
+                    {
+                        dim.Delete();
+                    }
+                }
+
+                ThreadFeature thread = feature as ThreadFeature;
+
+                if (prm.LengthSource == "fixed value" && thread != null)
+                {
+                    Parameter threadLength = thread.ThreadDepth;
+
+                    if (threadLength != null &&
+                        Math.Abs((double)threadLength.Value - length) < 1e-6)
+                    {
+                        doc.ComponentDefinition.Parameters[prm.Length].
+                            Expression = threadLength.Name;
+
+                        prm.LengthSource = "thread length, " + threadLength.Name;
+                    }
+                }
+
+                if (sketch.DimensionConstraints.Count == 0)
+                    sketch.Delete();
+                else
+                    sketch.Visible = false;
+            }
+            catch (Exception ex)
+            {
+                AddinLog.Warn("Could not link " + prm.Prefix +
+                    " parameters to the threaded face; fixed values are used.", ex);
+            }
+        }
+
+        /////////////////////////////////////////////////////////////
         // Use: Initializes parameters to create new solid bodies
         //      affected by the future CoilFeature for Standard
         //      Thread.
         /////////////////////////////////////////////////////////////
         private static bool InitializeForCoilStandard(
-            PartDocument doc, 
-            ThreadInfo threadInfo, 
+            PartDocument doc,
+            ThreadInfo threadInfo,
             Face threadedFace,
-            string sketchName,
-            bool isInteriorFace, double pitchValue)
+            PlanarSketch sketch,
+            bool isInteriorFace, double pitchValue,
+            ThreadParameters prm)
         {
+            string sketchName = sketch.Name;
+
             Parameter pitch =
                 ThreadWorker.FindTemplateParameter(doc,
                     "Pitch",
@@ -518,11 +809,26 @@ namespace ThreadModeler
                 doc.Update();
             }
 
-            bool ret = ThreadWorker.CreateCoilBodyStandard(doc, 
-                threadInfo, 
-                minorRad, 
+            // The thread depth is proportional to the pitch for a
+            // given template: drive the profile from the thread
+            // parameters instead of fixed values.
+            prm.AddDepth(doc, Math.Abs(majorRad - minorRad), pitchValue);
+
+            pitch.Expression = prm.Pitch;
+
+            major.Expression = (isInteriorFace ?
+                prm.Depth : prm.Diameter + " / 2 ul");
+
+            doc.Update();
+
+            Toolkit.GroundFreePoints(sketch);
+
+            bool ret = ThreadWorker.CreateCoilBodyStandard(doc,
+                threadInfo,
+                minorRad,
                 majorRad,
-                isInteriorFace);
+                isInteriorFace,
+                prm);
 
             return ret;
         }
@@ -596,6 +902,97 @@ namespace ThreadModeler
         }
 
         /////////////////////////////////////////////////////////////
+        // Use: Creates the sketch of the coil body cross-section:
+        //      the rectangle p1 (major radius, thread start),
+        //      p2 (major radius, thread end), p3, p4 (thread depth
+        //      towards the axis). It is fully constrained: the
+        //      sides are parallel to the sketch axes (x = radial,
+        //      y = thread axis), p1 lies on the radial axis, and the
+        //      radius, length and depth are dimensioned with the
+        //      thread parameters.
+        /////////////////////////////////////////////////////////////
+        private static PlanarSketch AddRingSketch(
+            PartComponentDefinition compDef,
+            WorkPlane wpl,
+            WorkPoint wpt,
+            WorkAxis xWa,
+            WorkAxis yWa,
+            Point p1, Point p2, Point p3, Point p4,
+            ThreadParameters prm)
+        {
+            PlanarSketch sketch =
+                compDef.Sketches.AddWithOrientation(wpl,
+                    xWa,
+                    true,
+                    true,
+                    wpt,
+                    false);
+
+            SketchPoint skp1 = sketch.SketchPoints.Add(
+                sketch.ModelToSketchSpace(p1), false);
+
+            SketchPoint skp2 = sketch.SketchPoints.Add(
+                sketch.ModelToSketchSpace(p2), false);
+
+            SketchPoint skp3 = sketch.SketchPoints.Add(
+                sketch.ModelToSketchSpace(p3), false);
+
+            SketchPoint skp4 = sketch.SketchPoints.Add(
+                sketch.ModelToSketchSpace(p4), false);
+
+            SketchLine major =
+                sketch.SketchLines.AddByTwoPoints(skp1, skp2);
+            SketchLine end =
+                sketch.SketchLines.AddByTwoPoints(skp2, skp3);
+            SketchLine minor =
+                sketch.SketchLines.AddByTwoPoints(skp3, skp4);
+            SketchLine start =
+                sketch.SketchLines.AddByTwoPoints(skp4, skp1);
+
+            if (prm == null)
+                return sketch;
+
+            GeometricConstraints gc = sketch.GeometricConstraints;
+
+            gc.AddVertical((SketchEntity)major, false);
+            gc.AddVertical((SketchEntity)minor, false);
+            gc.AddHorizontal((SketchEntity)end, false);
+            gc.AddHorizontal((SketchEntity)start, false);
+
+            SketchPoint origin =
+                sketch.AddByProjectingEntity(wpt) as SketchPoint;
+
+            SketchEntity radialAxis =
+                sketch.AddByProjectingEntity(xWa);
+
+            gc.AddCoincident((SketchEntity)skp1, radialAxis);
+
+            DimensionConstraints dc = sketch.DimensionConstraints;
+
+            Point2d p1s = skp1.Geometry;
+            Point2d p2s = skp2.Geometry;
+
+            dc.AddTwoPointDistance(origin, skp1,
+                DimensionOrientationEnum.kHorizontalDim,
+                _Tg.CreatePoint2d(p1s.X / 2, p1s.Y - 0.1 * prm.PitchValue),
+                false).Parameter.Expression =
+                    prm.Diameter + " / 2 ul";
+
+            dc.AddTwoPointDistance(skp1, skp2,
+                DimensionOrientationEnum.kVerticalDim,
+                _Tg.CreatePoint2d(p1s.X + prm.PitchValue,
+                    (p1s.Y + p2s.Y) / 2),
+                false).Parameter.Expression = prm.Length;
+
+            dc.AddTwoPointDistance(skp1, skp4,
+                DimensionOrientationEnum.kHorizontalDim,
+                _Tg.CreatePoint2d(p1s.X, p1s.Y - 0.2 * prm.PitchValue),
+                false).Parameter.Expression = prm.Depth;
+
+            return sketch;
+        }
+
+        /////////////////////////////////////////////////////////////
         // Use: Creates new solid bodies affected by the future
         //      CoilFeature for Standard Thread.
         /////////////////////////////////////////////////////////////
@@ -603,7 +1000,8 @@ namespace ThreadModeler
             ThreadInfo threadInfo,
             double minorRad,
             double majorRad,
-            bool isInteriorFace)
+            bool isInteriorFace,
+            ThreadParameters prm)
         {
             try
             {
@@ -674,41 +1072,14 @@ namespace ThreadModeler
                     p1.Y - xAxis.Y * revDepth,
                     p1.Z - xAxis.Z * revDepth);
 
-               
-                SketchPoint skp1 = null;
-                SketchPoint skp2 = null;
-                SketchPoint skp3 = null;
-                SketchPoint skp4 = null;
 
                 PlanarSketch sketch = null;
                 Profile profile = null;
 
                 if (!isInteriorFace)
                 {
-                    sketch =
-                        compDef.Sketches.AddWithOrientation(wpl,
-                            xWa,
-                            true,
-                            true,
-                            wpt,
-                            false);
-
-                    skp1 = sketch.SketchPoints.Add(
-                        sketch.ModelToSketchSpace(p1), false);
-
-                    skp2 = sketch.SketchPoints.Add(
-                        sketch.ModelToSketchSpace(p2), false);
-
-                    skp3 = sketch.SketchPoints.Add(
-                        sketch.ModelToSketchSpace(p3), false);
-
-                    skp4 = sketch.SketchPoints.Add(
-                        sketch.ModelToSketchSpace(p4), false);
-
-                    sketch.SketchLines.AddByTwoPoints(skp1, skp2);
-                    sketch.SketchLines.AddByTwoPoints(skp2, skp3);
-                    sketch.SketchLines.AddByTwoPoints(skp3, skp4);
-                    sketch.SketchLines.AddByTwoPoints(skp4, skp1);
+                    sketch = ThreadWorker.AddRingSketch(compDef,
+                        wpl, wpt, xWa, yWa, p1, p2, p3, p4, prm);
 
                     profile =
                         sketch.Profiles.AddForSolid(true, null, null);
@@ -720,35 +1091,13 @@ namespace ThreadModeler
                       PartFeatureOperationEnum.kCutOperation);
                 }
 
-              
-                sketch = compDef.Sketches.AddWithOrientation(wpl, 
-                    xWa, 
-                    true, 
-                    true, 
-                    wpt, 
-                    false);
+                sketch = ThreadWorker.AddRingSketch(compDef,
+                    wpl, wpt, xWa, yWa, p1, p2, p3, p4, prm);
 
-                skp1 = sketch.SketchPoints.Add(
-                    sketch.ModelToSketchSpace(p1), false);
-
-                skp2 = sketch.SketchPoints.Add(
-                    sketch.ModelToSketchSpace(p2), false);
-
-                skp3 = sketch.SketchPoints.Add(
-                    sketch.ModelToSketchSpace(p3), false);
-
-                skp4 = sketch.SketchPoints.Add(
-                    sketch.ModelToSketchSpace(p4), false);
-
-                sketch.SketchLines.AddByTwoPoints(skp1, skp2);
-                sketch.SketchLines.AddByTwoPoints(skp2, skp3);
-                sketch.SketchLines.AddByTwoPoints(skp3, skp4);
-                sketch.SketchLines.AddByTwoPoints(skp4, skp1);
-
-                profile = sketch.Profiles.AddForSolid(true, 
+                profile = sketch.Profiles.AddForSolid(true,
                     null, null);
 
-                RevolveFeature rev2 = 
+                RevolveFeature rev2 =
                  compDef.Features.RevolveFeatures.AddFull(
                   profile,
                   yWa,
@@ -916,7 +1265,8 @@ namespace ThreadModeler
             bool rightHanded,
             double taper,
             double pitch,
-            double extraPitch)
+            double extraPitch,
+            ThreadParameters prm)
         {
             string step = "creating the coil";
 
@@ -953,6 +1303,15 @@ namespace ThreadModeler
                         false,
                         0,
                         0);
+
+                if (prm != null)
+                {
+                    coil.SetPitchAndHeightExtent(
+                        prm.Pitch + " * (1 ul + " + prm.PitchOffset +
+                            " / 100 ul)",
+                        prm.Length + " + 2 ul * " + prm.Pitch,
+                        taper);
+                }
 
                 HealthStatusEnum health = coil.HealthStatus;
 

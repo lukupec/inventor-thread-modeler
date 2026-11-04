@@ -155,6 +155,40 @@ namespace ThreadModeler
         }
 
         /////////////////////////////////////////////////////////////
+        // Use: Grounds the points of a sketch that are still free,
+        //      so it is fully constrained (thread templates may
+        //      leave e.g. the length of their axis lines open).
+        //      A ground that over-constrains the sketch is removed.
+        /////////////////////////////////////////////////////////////
+        public static void GroundFreePoints(PlanarSketch sketch)
+        {
+            foreach (SketchPoint point in sketch.SketchPoints)
+            {
+                if (sketch.ConstraintStatus !=
+                    ConstraintStatusEnum.kUnderConstrainedConstraintStatus)
+                    return;
+
+                if (point.Reference)
+                    continue;
+
+                try
+                {
+                    GroundConstraint ground =
+                        sketch.GeometricConstraints.AddGround(
+                            (SketchEntity)point);
+
+                    if (sketch.ConstraintStatus ==
+                        ConstraintStatusEnum.kOverConstrainedConstraintStatus)
+                        ground.Delete();
+                }
+                catch (Exception)
+                {
+                    // Point is fully determined already.
+                }
+            }
+        }
+
+        /////////////////////////////////////////////////////////////
         // Use: Finds a parameter based on comment text
         //
         /////////////////////////////////////////////////////////////

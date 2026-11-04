@@ -74,6 +74,21 @@ The update state (last check, skipped version) is kept in `%LOCALAPPDATA%\Thread
 
 If modelling fails, the message says which step failed. The details are in the [log](#logs).
 
+### Parameters of a modelled thread
+
+Each modelled thread is driven by user parameters named after its thread feature (*Manage → Parameters*):
+
+| Parameter | Meaning |
+|---|---|
+| `Thread1_Pitch` | Thread pitch |
+| `Thread1_PitchOffset` | Coil pitch = pitch + this % (the dialog's *Pitch Offset*) |
+| `Thread1_Diameter` | Diameter of the threaded face; follows the hole/shaft |
+| `Thread1_Length` | Thread length; follows the threaded face, or the thread feature's length for a partial thread |
+| `Thread1_DepthFactor`, `Thread1_Depth` | Thread depth = factor × pitch (from the template) |
+
+All generated sketches are fully constrained. The thread stays at its position; if the hole or shaft moves, model
+the thread again.
+
 ### Configuration
 
 **Configuration** in the panel's slide-out assigns the thread profile template (`.ipt`) for ISO and for BSW.
